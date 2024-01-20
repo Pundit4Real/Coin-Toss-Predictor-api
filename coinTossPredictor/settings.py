@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework.authtoken',
     'rest_framework',
     'Api',
 ]
@@ -124,6 +125,8 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# APPEND_SLASH = False
+
 # Configuring REST Framework Authentication and Parsing
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -142,10 +145,10 @@ REST_FRAMEWORK = {
     ]
 }
 
-# Configure authentication
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-]
+# # Configure authentication
+# AUTHENTICATION_BACKENDS = [
+#     'django.contrib.auth.backends.ModelBackend',
+# ]
 
-# Configure session
-SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+# # Configure session
+# SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
