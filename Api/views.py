@@ -12,13 +12,13 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
 
     @action(detail=False, methods=['get'])
-    def all_users(self, request):
+    def users(self, request):
         users = User.objects.all()
         serializer = UserProfileSerializer(users, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['post'])
-    def register_user(self, request):
+    def register(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
 
@@ -34,7 +34,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'])
-    def login_user(self, request):
+    def login(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
 
@@ -47,7 +47,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Invalid username or password'}, status=status.HTTP_401_UNAUTHORIZED)
 
     @action(detail=False, methods=['post'])
-    def logout_user(self, request):
+    def logout(self, request):
         if request.user.is_authenticated:
             logout(request)
             return Response({'message': 'User logged out successfully'})
