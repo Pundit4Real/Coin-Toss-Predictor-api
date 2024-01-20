@@ -37,8 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Api',
     'rest_framework',
+    'Api',
 ]
 
 MIDDLEWARE = [
@@ -141,3 +141,11 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ]
 }
+
+# Configure authentication
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Configure session
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
