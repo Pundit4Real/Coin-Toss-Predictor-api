@@ -1,14 +1,17 @@
-from rest_framework import viewsets, permissions,status
+from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
-from .models import UserProfile, Prediction
-from .serializers import UserProfileSerializer, PredictionSerializer,BalanceUpdateSerializer
+from django.http import Http404
+from decimal import Decimal
+import random
+from rest_framework import viewsets, permissions,status
 from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from django.contrib.auth.models import User
-from django.http import Http404
-import random
-from decimal import Decimal
+from .models import UserProfile, Prediction
+from .serializers import UserProfileSerializer, PredictionSerializer,BalanceUpdateSerializer
+
+
+
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
@@ -81,7 +84,7 @@ class CoinTossViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['get'])
-    def history(self, request):
+    def history(self, request):             #method for displaying the coin toss history
         user = request.user
         predictions = Prediction.objects.filter(user=user)
         serializer = PredictionSerializer(predictions, many=True)
@@ -91,14 +94,14 @@ class CoinTossViewSet(viewsets.ViewSet):
     def predict(self, request):
         user = request.user
         try:
-            profile = user.userprofile  # Assuming a one-to-one relationship between User and UserProfile
+            profile = user.userprofile  
         except UserProfile.DoesNotExist:
             raise Http404("UserProfile matching query does not exist.")
 
-        # Implement coin toss logic
+        # coin toss logic
         result = random.choice(['HEAD', 'TAIL'])  # Simulating the coin toss
 
-        # Update user balance accordingly
+        # Updating user balance accordingly
         try:
             stake_amount = Decimal(request.data.get('stake_amount', 0.0))
             if stake_amount <= 0:
