@@ -68,7 +68,10 @@ class CoinTossViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def predict(self, request):
         user = request.user
-        profile = user.profile  # Assuming a one-to-one relationship between User and UserProfile
+        try:
+            profile = user.userprofile  # Assuming a one-to-one relationship between User and UserProfile
+        except UserProfile.DoesNotExist:
+            raise Http404("UserProfile matching query does not exist.")
 
         # Implement coin toss logic
         result = random.choice(['HEAD', 'TAIL'])  # Simulating the coin toss
