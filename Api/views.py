@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions,status
 from django.contrib.auth import authenticate, login, logout
-from .models import UserProfile
-from .serializers import UserProfileSerializer
+from .models import UserProfile, Prediction
+from .serializers import UserProfileSerializer, PredictionSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth.models import User
@@ -58,31 +58,47 @@ class AuthViewSet(viewsets.ViewSet):
 class CoinTossViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
+    @action(detail=False, methods=['get'])
+    def history(self, request):
+        user = request.user
+        predictions = Prediction.objects.filter(user=user)
+        serializer = PredictionSerializer(predictions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=['post'])
     def predict(self, request):
         user = request.user
+        profile = user.profile  # Assuming a one-to-one relationship between User and UserProfile
 
-        try:
-            profile = user.profile  # Assuming a one-to-one relationship between User and UserProfile
-        except UserProfile.DoesNotExist:
-            # Create a UserProfile for the user if it doesn't exist
-            profile = UserProfile.objects.create(user=user, balance=0.0)
-
+        # Implement coin toss logic
         result = random.choice(['HEAD', 'TAIL'])  # Simulating the coin toss
 
         # Update user balance accordingly
-        stake_amount = Decimal(float(request.data.get('stake_amount', 0.0)))
+        try:
+            stake_amount = Decimal(request.data.get('stake_amount', 0.0))
+            if stake_amount <= 0:
+                raise ValueError("Invalid stake amount")
 
-        if isinstance(stake_amount, (int, float)) and stake_amount > 0:
-            if result == 'HEAD':
-                profile.balance += 2 * stake_amount
-                profile.save()
-                message = f'Congratulations! You won {2 * stake_amount} units. New balance: {profile.balance}'
-            else:
-                profile.balance -= stake_amount
-                profile.save()
-                message = f'Oops! You lost {stake_amount} units. New balance: {profile.balance}'
+            if stake_amount > profile.balance:
+                raise ValueError("Insufficient balance")
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({'message': message, 'result': result}, status=status.HTTP_200_OK)
+        # Save the prediction to the user's history
+        prediction = Prediction.objects.create(
+            user=user,
+            side_predicted=request.data.get('side'),
+            stake_amount=stake_amount,
+            result=result
+        )
+
+        if result == 'HEAD':
+            profile.balance += 2 * stake_amount
+            profile.save()
+            message = f'Congratulations! You won {2 * stake_amount} units. New balance: {profile.balance}'
         else:
-            return Response({'error': 'Invalid stake amount'}, status=status.HTTP_400_BAD_REQUEST)
+            profile.balance -= stake_amount
+            profile.save()
+            message = f'Oops! You lost {stake_amount} units. New balance: {profile.balance}'
+
+        return Response({'message': message, 'result': result, 'prediction': PredictionSerializer(prediction).data}, status=status.HTTP_200_OK)
