@@ -7,7 +7,7 @@ from .views import UserProfileViewSet, AuthViewSet, CoinTossViewSet
 
 # Create a router and register the viewsets
 router = DefaultRouter()
-router.register(r'user', UserProfileViewSet, basename='user')
+router.register(r'user-profiles', UserProfileViewSet, basename='user-profile')
 router.register(r'auth', AuthViewSet, basename='auth')
 router.register(r'coin-toss', CoinTossViewSet, basename='coin-toss')
 

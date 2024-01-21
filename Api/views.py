@@ -1,8 +1,9 @@
 from rest_framework import viewsets, permissions,status
 from django.contrib.auth import authenticate, login, logout
 from .models import UserProfile, Prediction
-from .serializers import UserProfileSerializer, PredictionSerializer
+from .serializers import UserProfileSerializer, PredictionSerializer,BalanceUpdateSerializer
 from rest_framework.decorators import action
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from django.http import Http404
@@ -10,8 +11,8 @@ import random
 from decimal import Decimal
 
 class UserProfileViewSet(viewsets.ModelViewSet):
-    serializer_class = UserProfileSerializer
     queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['get'])
@@ -22,6 +23,20 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         except UserProfile.DoesNotExist:
             raise Http404("UserProfile matching query does not exist.")
+
+    @action(detail=True, methods=['post'])
+    def update_balance(self, request, pk=None):
+        user_profile = self.get_object()
+        serializer = BalanceUpdateSerializer(data=request.data)
+
+        if serializer.is_valid():
+            new_balance = serializer.validated_data['balance']
+            user_profile.balance = new_balance
+            user_profile.save()
+            return Response({'message': 'Balance updated successfully'}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
 
@@ -45,10 +60,17 @@ class AuthViewSet(viewsets.ViewSet):
 
         if user:
             login(request, user)
-            return Response({'message': 'Login successful'}, status=200)
+
+            # Issue a JWT token
+            refresh = RefreshToken.for_user(user)
+            data = {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
+
+            return Response({'message': 'Login successful', 'tokens': data}, status=200)
         else:
             return Response({'error': 'Invalid credentials'}, status=401)
-
     @action(detail=False, methods=['post'])
     def logout(self, request):
         logout(request)
