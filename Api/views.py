@@ -5,7 +5,9 @@ from .serializers import UserProfileSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth.models import User
-
+from django.http import Http404
+import random
+from decimal import Decimal
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
@@ -14,9 +16,12 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def balance(self, request):
-        serializer = self.get_serializer(request.user.profile)
-        return Response(serializer.data)
-
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            serializer = self.get_serializer(user_profile)
+            return Response(serializer.data)
+        except UserProfile.DoesNotExist:
+            raise Http404("UserProfile matching query does not exist.")
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
 
@@ -49,20 +54,25 @@ class AuthViewSet(viewsets.ViewSet):
         logout(request)
         return Response({'message': 'Logout successful'}, status=200)
 
+
 class CoinTossViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['post'])
     def predict(self, request):
         user = request.user
-        profile = user.profile  # Assuming you have a related_name='profile' in the UserProfile model
 
-        # Implement coin toss logic
-        import random
+        try:
+            profile = user.profile  # Assuming a one-to-one relationship between User and UserProfile
+        except UserProfile.DoesNotExist:
+            # Create a UserProfile for the user if it doesn't exist
+            profile = UserProfile.objects.create(user=user, balance=0.0)
+
         result = random.choice(['HEAD', 'TAIL'])  # Simulating the coin toss
 
         # Update user balance accordingly
-        stake_amount = request.data.get('stake_amount', 0)
+        stake_amount = Decimal(float(request.data.get('stake_amount', 0.0)))
+
         if isinstance(stake_amount, (int, float)) and stake_amount > 0:
             if result == 'HEAD':
                 profile.balance += 2 * stake_amount
