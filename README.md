@@ -9,13 +9,7 @@
   - [Installation](#installation)
   - [Database Setup](#database-setup)
 - [Running the API](#running-the-api)
-- [API Endpoints](#api-endpoints)
-  <!-- - [Create a Person Profile](#create-a-person-profile)
-  - [Get Person Profile](#get-person-profile)
-  - [Update Person Profile](#update-person-profile)
-  - [Delete Person Profile](#delete-person-profile)
-- [Sample Usage](#sample-usage)
-- [Limitations and Assumptions](#limitations-and-assumptions) -->
+
 
 ## Prerequisites
 
