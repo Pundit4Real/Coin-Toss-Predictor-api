@@ -1,19 +1,14 @@
-from django.contrib.auth.models import User
-from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from django.http import Http404
 from decimal import Decimal
 import random
-import logging
-from rest_framework import viewsets, permissions,status
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from .models import UserProfile, Prediction
-from .serializers import UserProfileSerializer, PredictionSerializer,BalanceUpdateSerializer
-
-
-logger = logging.getLogger(__name__)
+from .serializers import UserProfileSerializer, PredictionSerializer, BalanceUpdateSerializer
 
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
@@ -22,22 +17,23 @@ class AuthViewSet(viewsets.ViewSet):
     def register(self, request):
         try:
             # Extract user registration details from the request data
-            full_name = request.data.get('full_name')
+            first_name = request.data.get('first_name', '')
+            last_name = request.data.get('last_name', '')
             username = request.data.get('username')
             email = request.data.get('email')
             password = request.data.get('password')
             password_confirm = request.data.get('password_confirm')
 
             # Check if required fields are provided
-            if not all([username, password, full_name, email, password_confirm]):
+            if not all([first_name, username, email, password, password_confirm]):
                 return Response({'error': 'All registration fields are required'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Check if username is unique
-            if get_user_model().objects.filter(username=username).exists():
+            if User.objects.filter(username=username).exists():
                 return Response({'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Check if email is unique
-            if get_user_model().objects.filter(email=email).exists():
+            if User.objects.filter(email=email).exists():
                 return Response({'error': 'Email is already registered'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Check if passwords match
@@ -45,13 +41,17 @@ class AuthViewSet(viewsets.ViewSet):
                 return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Create a new user
-            user = get_user_model().objects.create_user(username=username, email=email, password=password, full_name=full_name)
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name
+            )
 
             # Return a success message
             return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
         except Exception as e:
-            # Log the exception for debugging
-            logger.exception("Error during user registration:")
             return Response({'error': 'Internal Server Error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=False, methods=['post'])
@@ -79,8 +79,6 @@ class AuthViewSet(viewsets.ViewSet):
     def logout(self, request):
         logout(request)
         return Response({'message': 'Logout successful'}, status=200)
-
-
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
@@ -113,7 +111,7 @@ class CoinTossViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['get'])
-    def history(self, request):             #method for displaying the coin toss history
+    def history(self, request):
         user = request.user
         predictions = Prediction.objects.filter(user=user)
         serializer = PredictionSerializer(predictions, many=True)
