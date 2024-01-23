@@ -45,16 +45,42 @@ class AuthViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def register(self, request):
+        # Extract user registration details from the request data
         username = request.data.get('username')
         password = request.data.get('password')
+        full_name = request.data.get('full_name')
+        email = request.data.get('email')
+        password_confirm = request.data.get('password_confirm')
 
-        if username and password:
-            user = User.objects.create_user(username=username, password=password)
-            login(request, user)
-            return Response({'message': 'User registered and logged in successfully'}, status=201)
+        # Check if required fields are provided
+        if not all([username, password, full_name, email, password_confirm]):
+            return Response({'error': 'All registration fields are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if username is unique
+        if User.objects.filter(username=username).exists():
+            return Response({'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if email is unique
+        if User.objects.filter(email=email).exists():
+            return Response({'error': 'Email is already registered'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if passwords match
+        if password != password_confirm:
+            return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create a new user
+        user = User.objects.create_user(username=username, email=email, password=password)
+        user.full_name = full_name
+        user.save()
+
+        # Log in the user
+        authenticated_user = authenticate(request, username=username, password=password)
+        if authenticated_user:
+            login(request, authenticated_user)
+            serializer = UserProfileSerializer(authenticated_user.profile)
+            return Response({'message': 'User registered and logged in successfully', 'user_profile': serializer.data}, status=status.HTTP_201_CREATED)
         else:
-            return Response({'error': 'Username and password are required'}, status=400)
-
+            return Response({'error': 'Failed to authenticate user after registration'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     @action(detail=False, methods=['post'])
     def login(self, request):
         username = request.data.get('username')

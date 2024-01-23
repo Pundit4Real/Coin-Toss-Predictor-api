@@ -13,7 +13,7 @@ class Prediction(models.Model):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    full_name = models.CharField(max_length=80)
+    # full_name = models.CharField(max_length=80)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
 
