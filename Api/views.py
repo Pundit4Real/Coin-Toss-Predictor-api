@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate, login, logout
 from django.http import Http404
 from decimal import Decimal
@@ -10,6 +11,67 @@ from rest_framework.response import Response
 from .models import UserProfile, Prediction
 from .serializers import UserProfileSerializer, PredictionSerializer,BalanceUpdateSerializer
 
+
+
+class AuthViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.AllowAny]
+
+    @action(detail=False, methods=['post'])
+    def register(self, request):
+        # Extract user registration details from the request data
+        full_name = request.data.get('full_name')
+        username = request.data.get('username')
+        email = request.data.get('email')
+        password = request.data.get('password')
+        password_confirm = request.data.get('password_confirm')
+
+        # Check if required fields are provided
+        if not all([username, password, full_name, email, password_confirm]):
+            return Response({'error': 'All registration fields are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if username is unique
+        if get_user_model().objects.filter(username=username).exists():
+            return Response({'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if email is unique
+        if get_user_model().objects.filter(email=email).exists():
+            return Response({'error': 'Email is already registered'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if passwords match
+        if password != password_confirm:
+            return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create a new user
+        user = get_user_model().objects.create_user(username=username, email=email, password=password, full_name=full_name)
+
+        # Return a success message
+        return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
+    
+    @action(detail=False, methods=['post'])
+    def login(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(request, username=username, password=password)
+
+        if user:
+            login(request, user)
+
+            # Issue a JWT token
+            refresh = RefreshToken.for_user(user)
+            data = {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
+
+            return Response({'message': 'Login successful', 'tokens': data}, status=200)
+        else:
+            return Response({'error': 'Invalid credentials'}, status=401)
+        
+
+    @action(detail=False, methods=['post'])
+    def logout(self, request):
+        logout(request)
+        return Response({'message': 'Logout successful'}, status=200)
 
 
 
@@ -39,76 +101,6 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Balance updated successfully'}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-class AuthViewSet(viewsets.ViewSet):
-    permission_classes = [permissions.AllowAny]
-
-    @action(detail=False, methods=['post'])
-    def register(self, request):
-        # Extract user registration details from the request data
-        username = request.data.get('username')
-        password = request.data.get('password')
-        full_name = request.data.get('full_name')
-        email = request.data.get('email')
-        password_confirm = request.data.get('password_confirm')
-
-        # Check if required fields are provided
-        if not all([username, password, full_name, email, password_confirm]):
-            return Response({'error': 'All registration fields are required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Check if username is unique
-        if User.objects.filter(username=username).exists():
-            return Response({'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Check if email is unique
-        if User.objects.filter(email=email).exists():
-            return Response({'error': 'Email is already registered'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Check if passwords match
-        if password != password_confirm:
-            return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Create a new user
-        user = User.objects.create_user(username=username, email=email, password=password)
-        user.full_name = full_name
-        user.save()
-
-        # Log in the user
-        authenticated_user = authenticate(request, username=username, password=password)
-        if authenticated_user:
-            login(request, authenticated_user)
-            serializer = UserProfileSerializer(authenticated_user.profile)
-            return Response({'message': 'User registered and logged in successfully', 'user_profile': serializer.data}, status=status.HTTP_201_CREATED)
-        else:
-            return Response({'error': 'Failed to authenticate user after registration'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-
-    @action(detail=False, methods=['post'])
-    def login(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = authenticate(request, username=username, password=password)
-
-        if user:
-            login(request, user)
-
-            # Issue a JWT token
-            refresh = RefreshToken.for_user(user)
-            data = {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
-
-            return Response({'message': 'Login successful', 'tokens': data}, status=200)
-        else:
-            return Response({'error': 'Invalid credentials'}, status=401)
-        
-
-    @action(detail=False, methods=['post'])
-    def logout(self, request):
-        logout(request)
-        return Response({'message': 'Logout successful'}, status=200)
-
 
 class CoinTossViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]

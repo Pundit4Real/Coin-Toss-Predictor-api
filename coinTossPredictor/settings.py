@@ -140,3 +140,7 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=7),
 }
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]

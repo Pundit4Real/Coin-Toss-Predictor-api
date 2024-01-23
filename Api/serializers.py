@@ -16,9 +16,11 @@ class CustomUserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
         user = CustomUser.objects.create(**validated_data)
-        UserProfile.objects.create(user=user, **profile_data)
-        return user
 
+        # Associate the UserProfile with the user
+        UserProfile.objects.create(user=user, **profile_data)
+
+        return user
 class PredictionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Prediction
