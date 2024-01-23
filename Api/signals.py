@@ -3,10 +3,9 @@ from django.db.models.signals import post_save
 from .models import UserProfile
 from django.contrib.auth.models import User
 
-
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        UserProfile.objects.create(user=instance)
+        UserProfile.objects.create(user=instance, full_name=instance.full_name, email=instance.email)
 
 post_save.connect(create_user_profile, sender=User)
