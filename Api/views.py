@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import Http404
 from decimal import Decimal
 import random
+import logging
 from rest_framework import viewsets, permissions,status
 from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -12,40 +13,46 @@ from .models import UserProfile, Prediction
 from .serializers import UserProfileSerializer, PredictionSerializer,BalanceUpdateSerializer
 
 
+logger = logging.getLogger(__name__)
 
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
 
     @action(detail=False, methods=['post'])
     def register(self, request):
-        # Extract user registration details from the request data
-        full_name = request.data.get('full_name')
-        username = request.data.get('username')
-        email = request.data.get('email')
-        password = request.data.get('password')
-        password_confirm = request.data.get('password_confirm')
+        try:
+            # Extract user registration details from the request data
+            full_name = request.data.get('full_name')
+            username = request.data.get('username')
+            email = request.data.get('email')
+            password = request.data.get('password')
+            password_confirm = request.data.get('password_confirm')
 
-        # Check if required fields are provided
-        if not all([username, password, full_name, email, password_confirm]):
-            return Response({'error': 'All registration fields are required'}, status=status.HTTP_400_BAD_REQUEST)
+            # Check if required fields are provided
+            if not all([username, password, full_name, email, password_confirm]):
+                return Response({'error': 'All registration fields are required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if username is unique
-        if get_user_model().objects.filter(username=username).exists():
-            return Response({'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
+            # Check if username is unique
+            if get_user_model().objects.filter(username=username).exists():
+                return Response({'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if email is unique
-        if get_user_model().objects.filter(email=email).exists():
-            return Response({'error': 'Email is already registered'}, status=status.HTTP_400_BAD_REQUEST)
+            # Check if email is unique
+            if get_user_model().objects.filter(email=email).exists():
+                return Response({'error': 'Email is already registered'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if passwords match
-        if password != password_confirm:
-            return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
+            # Check if passwords match
+            if password != password_confirm:
+                return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Create a new user
-        user = get_user_model().objects.create_user(username=username, email=email, password=password, full_name=full_name)
+            # Create a new user
+            user = get_user_model().objects.create_user(username=username, email=email, password=password, full_name=full_name)
 
-        # Return a success message
-        return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
+            # Return a success message
+            return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            # Log the exception for debugging
+            logger.exception("Error during user registration:")
+            return Response({'error': 'Internal Server Error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=False, methods=['post'])
     def login(self, request):
