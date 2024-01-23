@@ -22,7 +22,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 class PredictionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Prediction
-        fields = ('timestamp', 'side_predicted', 'stake_amount', 'result')
+        fields = ('id','predicted_at', 'side_predicted', 'stake_amount', 'result')
 
 class BalanceUpdateSerializer(serializers.Serializer):
     balance = serializers.DecimalField(max_digits=10, decimal_places=2)

@@ -81,6 +81,8 @@ class AuthViewSet(viewsets.ViewSet):
             return Response({'message': 'User registered and logged in successfully', 'user_profile': serializer.data}, status=status.HTTP_201_CREATED)
         else:
             return Response({'error': 'Failed to authenticate user after registration'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
     @action(detail=False, methods=['post'])
     def login(self, request):
         username = request.data.get('username')
@@ -100,6 +102,8 @@ class AuthViewSet(viewsets.ViewSet):
             return Response({'message': 'Login successful', 'tokens': data}, status=200)
         else:
             return Response({'error': 'Invalid credentials'}, status=401)
+        
+
     @action(detail=False, methods=['post'])
     def logout(self, request):
         logout(request)
@@ -116,15 +120,15 @@ class CoinTossViewSet(viewsets.ViewSet):
         serializer = PredictionSerializer(predictions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['post'])
+     @action(detail=False, methods=['post'])
     def predict(self, request):
         user = request.user
         try:
-            profile = user.userprofile  
+            profile = user.userprofile
         except UserProfile.DoesNotExist:
             raise Http404("UserProfile matching query does not exist.")
 
-        # coin toss logic
+        # Coin toss logic
         result = random.choice(['HEAD', 'TAIL'])  # Simulating the coin toss
 
         # Updating user balance accordingly
@@ -155,4 +159,19 @@ class CoinTossViewSet(viewsets.ViewSet):
             profile.save()
             message = f'Oops! You lost {stake_amount} units. New balance: {profile.balance}'
 
-        return Response({'message': message, 'result': result, 'prediction': PredictionSerializer(prediction).data}, status=status.HTTP_200_OK)
+        # Include additional fields in the response
+        prediction_data = PredictionSerializer(prediction).data
+        response_data = {
+            'message': message,
+            'result': result,
+            'prediction': {
+                'id': prediction_data['id'],
+                'username': user.username,
+                'side_predicted': prediction_data['side_predicted'],
+                'stake_amount': prediction_data['stake_amount'],
+                'result': prediction_data['result'],
+                'predicted_at': prediction_data['predicted_at']
+            }
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
