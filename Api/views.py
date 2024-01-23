@@ -120,7 +120,7 @@ class CoinTossViewSet(viewsets.ViewSet):
         serializer = PredictionSerializer(predictions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-     @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'])
     def predict(self, request):
         user = request.user
         try:
