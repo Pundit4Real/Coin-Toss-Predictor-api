@@ -3,15 +3,16 @@ from django.contrib.auth.models import User
 from .models import UserProfile, Prediction
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    username = serializers.ReadOnlyField(source='user.username')
+    username = serializers.ReadOnlyField(source='username.username')
     class Meta:
         model = UserProfile
         fields = ['id','username', 'balance']
 
 class PredictionSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
     class Meta:
         model = Prediction
-        fields = ['id', 'predicted_at', 'side_predicted', 'stake_amount', 'result']
+        fields = ['username', 'predicted_at', 'side_predicted', 'stake_amount', 'result']
         read_only_fields = ['id', 'predicted_at', 'side_predicted', 'stake_amount', 'result']
 
 class BalanceUpdateSerializer(serializers.Serializer):

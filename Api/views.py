@@ -1,14 +1,14 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from rest_framework.decorators import action
+from rest_framework import viewsets, permissions, status
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.response import Response
 from django.http import Http404
 from decimal import Decimal
 import random
-from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.response import Response
 from .models import UserProfile, Prediction
-from .serializers import UserProfileSerializer, PredictionSerializer, BalanceUpdateSerializer
+from .serializers import *
 
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
@@ -49,11 +49,11 @@ class AuthViewSet(viewsets.ViewSet):
                 last_name=last_name
             )
 
-            # Return a success message
             return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': 'Internal Server Error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+        
+    #login method
     @action(detail=False, methods=['post'])
     def login(self, request):
         username = request.data.get('username')
@@ -74,11 +74,12 @@ class AuthViewSet(viewsets.ViewSet):
         else:
             return Response({'error': 'Invalid credentials'}, status=401)
         
-
+#logout method
     @action(detail=False, methods=['post'])
     def logout(self, request):
         logout(request)
         return Response({'message': 'Logout successful'}, status=200)
+    
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
@@ -100,20 +101,25 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         serializer = BalanceUpdateSerializer(data=request.data)
 
         if serializer.is_valid():
-            new_balance = serializer.validated_data['balance']
-            user_profile.balance = new_balance
+            added_amount = serializer.validated_data['balance']
+            user_profile.balance += added_amount
             user_profile.save()
-            return Response({'message': 'Balance updated successfully'}, status=status.HTTP_200_OK)
+
+            return Response({'message': 'Balance updated successfully', 'New balance': user_profile.balance}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class CoinTossViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = PredictionSerializer
 
-    def get_queryset(self):
-        user = self.request.user
-        return Prediction.objects.filter(user=user)
+class CoinTossViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer = PredictionSerializer
+
+    @action(detail=False, methods=['get'])
+    def history(self, request):
+        user = request.user
+        predictions = Prediction.objects.filter(user=user)
+        serializer = PredictionSerializer(predictions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
     def predict(self, request):
@@ -154,13 +160,12 @@ class CoinTossViewSet(viewsets.ReadOnlyModelViewSet):
             profile.save()
             message = f'Oops! You lost {stake_amount} units. New balance: {profile.balance}'
 
-        # Include additional fields in the response
+        # fields in the history response
         prediction_data = PredictionSerializer(prediction).data
         response_data = {
             'message': message,
-            'result': result,
+            'result': result,''
             'prediction': {
-                'id': prediction_data['id'],
                 'username': user.username,
                 'side_predicted': prediction_data['side_predicted'],
                 'stake_amount': prediction_data['stake_amount'],
