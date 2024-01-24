@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework import viewsets, permissions, status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from django.http import Http404
 from decimal import Decimal
 import random
@@ -41,7 +42,7 @@ class AuthViewSet(viewsets.ViewSet):
                 return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Create a new user
-            user = User.objects.create_user(
+            usernam = User.objects.create_user(
                 username=username,
                 email=email,
                 password=password,
@@ -102,6 +103,11 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
         if serializer.is_valid():
             added_amount = serializer.validated_data['balance']
+
+            # Ensure the added amount is not negative
+            if added_amount <= 0:
+                raise ValidationError({'balance': 'Balance update amount must be greater than zero(0).'})
+
             user_profile.balance += added_amount
             user_profile.save()
 
