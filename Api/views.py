@@ -107,15 +107,13 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class CoinTossViewSet(viewsets.ViewSet):
+class CoinTossViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PredictionSerializer
 
-    @action(detail=False, methods=['get'])
-    def history(self, request):
-        user = request.user
-        predictions = Prediction.objects.filter(user=user)
-        serializer = PredictionSerializer(predictions, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get_queryset(self):
+        user = self.request.user
+        return Prediction.objects.filter(user=user)
 
     @action(detail=False, methods=['post'])
     def predict(self, request):
