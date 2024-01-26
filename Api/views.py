@@ -13,7 +13,7 @@ from .serializers import *
 
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
-
+    # registration method
     @action(detail=False, methods=['post'])
     def register(self, request):
         try:
@@ -41,8 +41,8 @@ class AuthViewSet(viewsets.ViewSet):
             if password != password_confirm:
                 return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Create a new user
-            usernam = User.objects.create_user(
+            # Create a new user with a hashed password
+            user = User.objects.create_user(
                 username=username,
                 email=email,
                 password=password,
@@ -53,34 +53,39 @@ class AuthViewSet(viewsets.ViewSet):
             return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': 'Internal Server Error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-    #login method
+
+    # login method
     @action(detail=False, methods=['post'])
     def login(self, request):
-        username = request.data.get('username')
+        email = request.data.get('email')
         password = request.data.get('password')
-        user = authenticate(request, username=username, password=password)
+
+        user = User.objects.filter(email=email).first()
 
         if user:
-            login(request, user)
+            # Use authenticate to check the password (handles hashing)
+            user = authenticate(request, email=user.email, password=password)
 
-            # Issue a JWT token
-            refresh = RefreshToken.for_user(user)
-            data = {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
+            if user:
+                # Check if the user is active
+                if user.is_active:
+                    login(request, user)
 
-            return Response({'message': 'Login successful', 'tokens': data}, status=200)
+                    # Issue a JWT token
+                    refresh = RefreshToken.for_user(user)
+                    data = {
+                        'refresh': str(refresh),
+                        'access': str(refresh.access_token),
+                    }
+
+                    return Response({'message': 'Login successful', 'tokens': data}, status=200)
+                else:
+                    return Response({'error': 'User is not active'}, status=401)
+            else:
+                return Response({'error': 'Invalid password', 'field': 'password'}, status=401)
         else:
-            return Response({'error': 'Invalid credentials'}, status=401)
-        
-#logout method
-    @action(detail=False, methods=['post'])
-    def logout(self, request):
-        logout(request)
-        return Response({'message': 'Logout successful'}, status=200)
-    
+            return Response({'error': 'Invalid email', 'field': 'email'}, status=401)
+
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()

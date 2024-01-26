@@ -4,11 +4,11 @@ from django.utils import timezone
 
 
 class UserProfile(models.Model):
-    username = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
-        return f"{self.username.username}'s Profile"
+        return f"{self.user.username}'s Profile"
 
 
 class Prediction(models.Model):
