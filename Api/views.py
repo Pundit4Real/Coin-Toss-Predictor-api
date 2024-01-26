@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from rest_framework.decorators import action
 from rest_framework import viewsets, permissions, status
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -11,9 +12,12 @@ import random
 from .models import UserProfile, Prediction
 from .serializers import *
 
+
+User = get_user_model()
+
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
-    
+
     # registration method
     @action(detail=False, methods=['post'])
     def register(self, request):
@@ -53,7 +57,8 @@ class AuthViewSet(viewsets.ViewSet):
 
             return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
         except Exception as e:
-            return Response({'error': 'Internal Server Error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': f'Internal Server Error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
 
     # login method
     @action(detail=False, methods=['post'])
