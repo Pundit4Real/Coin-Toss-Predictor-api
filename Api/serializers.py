@@ -2,15 +2,10 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import UserProfile, Prediction
 
-# ... (other imports)
-
 class UserProfileSerializer(serializers.ModelSerializer):
-    username = serializers.ReadOnlyField(source='user.username')  # Change from 'user' to 'user.username'
-    
     class Meta:
         model = UserProfile
-        fields = ['id', 'username', 'balance']
-
+        fields = ['id', 'user', 'balance']
 
 class PredictionSerializer(serializers.ModelSerializer):
     class Meta:
