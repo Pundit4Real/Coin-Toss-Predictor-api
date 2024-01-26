@@ -141,4 +141,4 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=7),
 }
 
-
+AUTH_USER_MODEL= 'Api.User'

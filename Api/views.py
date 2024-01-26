@@ -13,6 +13,7 @@ from .serializers import *
 
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
+    
     # registration method
     @action(detail=False, methods=['post'])
     def register(self, request):
