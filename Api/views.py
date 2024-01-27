@@ -2,6 +2,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import action
+from django.contrib import messages
 from rest_framework import viewsets, permissions, status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
@@ -58,8 +59,7 @@ class AuthViewSet(viewsets.ViewSet):
             return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': f'Internal Server Error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-
+            
     # login method
     @action(detail=False, methods=['post'])
     def login(self, request):
@@ -69,7 +69,6 @@ class AuthViewSet(viewsets.ViewSet):
         user = User.objects.filter(email=email).first()
 
         if user:
-            # Use authenticate to check the password (handles hashing)
             user = authenticate(request, email=user.email, password=password)
 
             if user:
@@ -84,13 +83,14 @@ class AuthViewSet(viewsets.ViewSet):
                         'access': str(refresh.access_token),
                     }
 
-                    return Response({'message': 'Login successful', 'tokens': data}, status=200)
+                    return Response({'message': 'Login successful', 'tokens': data}, status=status.HTTP_200_OK)
                 else:
-                    return Response({'error': 'User is not active'}, status=401)
+                    return Response({'error': 'User is not active'}, status=status.HTTP_401_UNAUTHORIZED)
             else:
-                return Response({'error': 'Invalid password', 'field': 'password'}, status=401)
+                return Response({'error': 'Invalid password'}, status=status.HTTP_401_UNAUTHORIZED)
         else:
-            return Response({'error': 'Invalid email', 'field': 'email'}, status=401)
+            return Response({'error': 'Invalid email'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
@@ -103,9 +103,15 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         try:
             user_profile = UserProfile.objects.get(user=request.user)
             serializer = self.get_serializer(user_profile)
-            return Response(serializer.data)
+            response_data = {
+                'username': serializer.data['user'],
+                'balance': serializer.data['balance']
+            }
+            return Response(response_data)
         except UserProfile.DoesNotExist:
             raise Http404("UserProfile matching query does not exist.")
+
+
 
     @action(detail=True, methods=['post'])
     def update_balance(self, request, pk=None):
@@ -126,17 +132,31 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class CoinTossViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer = PredictionSerializer
+
 
     @action(detail=False, methods=['get'])
     def history(self, request):
         user = request.user
         predictions = Prediction.objects.filter(user=user)
         serializer = PredictionSerializer(predictions, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        # Include the desired fields in the response
+        response_data = []
+        for prediction_data in serializer.data:
+            win = prediction_data['result'] == 'HEAD'  # You may need to adjust this based on your logic
+            response_data.append({
+                'username': user.username,
+                'predicted_at': prediction_data['predicted_at'],
+                'side_predicted': prediction_data['side_predicted'],
+                'stake_amount': prediction_data['stake_amount'],
+                'result': prediction_data['result'],
+                'win': win
+            })
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
     def predict(self, request):
@@ -147,7 +167,7 @@ class CoinTossViewSet(viewsets.ViewSet):
             raise Http404("UserProfile matching query does not exist.")
 
         # Coin toss logic
-        result = random.choice(['HEAD', 'TAIL'])  # Simulating the coin toss
+        result = random.choice(['HEAD','head',1,0,'tail' ,'TAIL'])  # Simulating the coin toss
 
         # Updating user balance accordingly
         try:
@@ -168,26 +188,31 @@ class CoinTossViewSet(viewsets.ViewSet):
             result=result
         )
 
-        if result == 'HEAD':
+        if result in ['HEAD', 'head', 1]:
             profile.balance += 2 * stake_amount
             profile.save()
             message = f'Congratulations! You won {2 * stake_amount} units. New balance: {profile.balance}'
-        else:
+            win = True
+        elif result in ['TAIL', 'tail', 0]:
             profile.balance -= stake_amount
             profile.save()
             message = f'Oops! You lost {stake_amount} units. New balance: {profile.balance}'
-
-        # fields in the history response
+            win = False
+        else:
+            return Response({'error': 'Invalid result from coin toss. Please choose from the options: HEAD or TAIL'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Include the desired fields in the response
         prediction_data = PredictionSerializer(prediction).data
         response_data = {
             'message': message,
-            'result': result,''
+            'result': result,
             'prediction': {
                 'username': user.username,
                 'side_predicted': prediction_data['side_predicted'],
                 'stake_amount': prediction_data['stake_amount'],
                 'result': prediction_data['result'],
-                'predicted_at': prediction_data['predicted_at']
+                'predicted_at': prediction_data['predicted_at'],
+                'win': win
             }
         }
 
