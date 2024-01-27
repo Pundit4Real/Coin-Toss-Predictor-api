@@ -201,7 +201,7 @@ class CoinTossViewSet(viewsets.ViewSet):
         else:
             return Response({'error': 'Invalid result from coin toss. Please choose from the options: HEAD or TAIL'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Include the desired fields in the response
+        #response fields
         prediction_data = PredictionSerializer(prediction).data
         response_data = {
             'message': message,
