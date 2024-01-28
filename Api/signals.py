@@ -19,7 +19,7 @@ def save_user_profile(sender, instance, **kwargs):
 @receiver(post_save, sender=User)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     """
-    A signal handler which creates a new auth token for every newly created user.
+    A signal handler that creates a new auth token for every newly created user.
     """
     if created:
         Token.objects.create(user=instance)

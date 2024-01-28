@@ -112,7 +112,6 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             raise Http404("UserProfile matching query does not exist.")
 
 
-
     @action(detail=True, methods=['post'])
     def update_balance(self, request, pk=None):
         user_profile = self.get_object()
@@ -146,17 +145,18 @@ class CoinTossViewSet(viewsets.ViewSet):
         # Include the desired fields in the response
         response_data = []
         for prediction_data in serializer.data:
-            win = prediction_data['result'] == 'HEAD'  # You may need to adjust this based on your logic
+            win = prediction_data['result'] == 'TAIL'  # You may need to adjust this based on your logic
             response_data.append({
                 'username': user.username,
-                'predicted_at': prediction_data['predicted_at'],
                 'side_predicted': prediction_data['side_predicted'],
                 'stake_amount': prediction_data['stake_amount'],
+                'predicted_at': prediction_data['predicted_at'],
                 'result': prediction_data['result'],
-                'win': win
+                'win':win
             })
 
         return Response(response_data, status=status.HTTP_200_OK)
+    
 
     @action(detail=False, methods=['post'])
     def predict(self, request):
@@ -167,7 +167,15 @@ class CoinTossViewSet(viewsets.ViewSet):
             raise Http404("UserProfile matching query does not exist.")
 
         # Coin toss logic
-        result = random.choice(['HEAD','head',1,0,'tail' ,'TAIL'])  # Simulating the coin toss
+        result_options = ['HEAD', 'TAIL']
+        result = random.choice(result_options)
+
+        # Convert the side to upper case
+        side = request.data.get('side', '').upper()
+
+        # Ensure that the side is a valid option
+        if side not in result_options:
+            return Response({'error': 'Invalid side. Please choose from the options: HEAD or TAIL'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Updating user balance accordingly
         try:
@@ -183,25 +191,24 @@ class CoinTossViewSet(viewsets.ViewSet):
         # Save the prediction to the user's history
         prediction = Prediction.objects.create(
             user=user,
-            side_predicted=request.data.get('side'),
+            side_predicted=side,
             stake_amount=stake_amount,
-            result=result
+            result=result,
         )
 
-        if result in ['HEAD', 'head', 1]:
+        # Process the result
+        if result == side:
             profile.balance += 2 * stake_amount
             profile.save()
-            message = f'Congratulations! You won {2 * stake_amount} units. New balance: {profile.balance}'
+            message = f'Congratulations! You won  Ghs {2 * stake_amount} . New balance: Ghs {profile.balance}'
             win = True
-        elif result in ['TAIL', 'tail', 0]:
+        else:
             profile.balance -= stake_amount
             profile.save()
-            message = f'Oops! You lost {stake_amount} units. New balance: {profile.balance}'
+            message = f'Oops! You lost Ghs {stake_amount} . New balance: Ghs {profile.balance}'
             win = False
-        else:
-            return Response({'error': 'Invalid result from coin toss. Please choose from the options: HEAD or TAIL'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        #response fields
+
+        # Include the desired fields in the response
         prediction_data = PredictionSerializer(prediction).data
         response_data = {
             'message': message,

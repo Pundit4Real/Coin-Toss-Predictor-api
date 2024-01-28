@@ -10,4 +10,5 @@ router.register(r'coin-toss', CoinTossViewSet, basename='coin-toss')
 
 urlpatterns = [
     path('api/', include(router.urls)),
+    
 ]
