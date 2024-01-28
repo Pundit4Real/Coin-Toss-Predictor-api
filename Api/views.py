@@ -90,6 +90,13 @@ class AuthViewSet(viewsets.ViewSet):
                 return Response({'error': 'Invalid password'}, status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Response({'error': 'Invalid email'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # logout method
+    @action(detail=False, methods=['post'])
+    def logout(self, request):
+        logout(request)
+
+        return Response({'message': 'Logout successful'}, status=status.HTTP_200_OK)
 
 
 
