@@ -134,7 +134,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             user_profile.balance += added_amount
             user_profile.save()
 
-            return Response({'message': 'Balance updated successfully', 'New balance': user_profile.balance}, status=status.HTTP_200_OK)
+            return Response({'message': 'Balance updated successfully', 'New balance': f'Ghs {user_profile.balance}'}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -157,9 +157,9 @@ class CoinTossViewSet(viewsets.ViewSet):
                 'username': user.username,
                 'side_predicted': prediction_data['side_predicted'],
                 'stake_amount': prediction_data['stake_amount'],
-                'predicted_at': prediction_data['predicted_at'],
                 'result': prediction_data['result'],
-                'win':win
+                'win':win,
+                'predicted_at': prediction_data['predicted_at']
             })
 
         return Response(response_data, status=status.HTTP_200_OK)
@@ -225,8 +225,8 @@ class CoinTossViewSet(viewsets.ViewSet):
                 'side_predicted': prediction_data['side_predicted'],
                 'stake_amount': prediction_data['stake_amount'],
                 'result': prediction_data['result'],
-                'predicted_at': prediction_data['predicted_at'],
-                'win': win
+                'win': win,
+                'predicted_at': prediction_data['predicted_at']
             }
         }
 
