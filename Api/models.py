@@ -27,6 +27,7 @@ class Prediction(models.Model):
     side_predicted = models.CharField(max_length=4, choices=[('HEAD', 'HEAD'), ('TAIL', 'TAIL')])
     stake_amount = models.DecimalField(max_digits=10, decimal_places=2)
     result = models.CharField(max_length=4, choices=[('HEAD', 'HEAD'), ('TAIL', 'TAIL')])
+    win = models.BooleanField(default=False)
     predicted_at = models.DateTimeField(default=timezone.now)
 
     @property

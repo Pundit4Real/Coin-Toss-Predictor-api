@@ -12,8 +12,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class PredictionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Prediction
-        fields = ['user', 'predicted_at', 'side_predicted', 'stake_amount', 'result']
-        read_only_fields = ['id', 'predicted_at', 'side_predicted', 'stake_amount', 'result']
+        fields = ['user', 'predicted_at', 'side_predicted', 'stake_amount', 'result', 'win']
+        read_only_fields = ['id', 'predicted_at', 'side_predicted', 'stake_amount', 'result', 'win']
 
 class BalanceUpdateSerializer(serializers.Serializer):
     balance = serializers.DecimalField(max_digits=10, decimal_places=2)

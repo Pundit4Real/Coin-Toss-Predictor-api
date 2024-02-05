@@ -152,7 +152,7 @@ class CoinTossViewSet(viewsets.ViewSet):
         # Include the desired fields in the response
         response_data = []
         for prediction_data in serializer.data:
-            win = prediction_data['result'] == 'TAIL'  # You may need to adjust this based on your logic
+            win = prediction_data['result'] == prediction_data['side_predicted']
             response_data.append({
                 'username': user.username,
                 'side_predicted': prediction_data['side_predicted'],
@@ -217,6 +217,7 @@ class CoinTossViewSet(viewsets.ViewSet):
 
         # Include the desired fields in the response
         prediction_data = PredictionSerializer(prediction).data
+        win = result == side
         response_data = {
             'message': message,
             'result': result,
