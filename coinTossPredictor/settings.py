@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'Api', 
     'rest_framework',
     'rest_framework.authtoken',
@@ -53,6 +54,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'coinTossPredictor.urls'
@@ -149,3 +151,10 @@ SIMPLE_JWT = {
 }
 
 AUTH_USER_MODEL= 'Api.User'
+
+
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  
+]
+
