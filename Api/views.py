@@ -81,6 +81,12 @@ class AuthViewSet(viewsets.ViewSet):
                     data = {
                         'refresh': str(refresh),
                         'access': str(refresh.access_token),
+                        'User_info':{
+                            'First_name':user.first_name,
+                            'Last_name': user.last_name,
+                            'Username': user.username,
+                            'Email': user.email
+                        }
                     }
 
                     return Response({'message': 'Login successful', 'tokens': data}, status=status.HTTP_200_OK)
@@ -94,9 +100,15 @@ class AuthViewSet(viewsets.ViewSet):
         # logout method
     @action(detail=False, methods=['post'])
     def logout(self, request):
+
+        user = request.user
+
         logout(request)
 
-        return Response({'message': 'Logout successful'}, status=status.HTTP_200_OK)
+        if user:
+            return Response({'message':f'{user.username} logout successfully'}, status=200)
+        else:
+            return Response({'message':'Logout Successful'}, status=200)
 
 
 
