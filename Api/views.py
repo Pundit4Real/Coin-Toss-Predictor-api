@@ -2,7 +2,6 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import action
-from django.contrib import messages
 from rest_framework import viewsets, permissions, status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
@@ -11,7 +10,7 @@ from django.http import Http404
 from decimal import Decimal
 import random
 from .models import UserProfile, Prediction
-from .serializers import *
+from .serializers import UserProfileSerializer,PredictionSerializer,BalanceUpdateSerializer
 
 
 User = get_user_model()
