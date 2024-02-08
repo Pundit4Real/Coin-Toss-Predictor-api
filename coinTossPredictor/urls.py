@@ -17,7 +17,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 
+from django.conf import Settings
+from django.conf.urls.static import static
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('Api.urls')),
 ]
+
+urlpatterns += static(Settings.STATIC_URL, document_root= Settings.STATIC_ROOT)
+urlpatterns += static(Settings.MEDIA_URL, document_root=Settings.MEDIA_ROOT)
