@@ -106,7 +106,7 @@ class AuthViewSet(viewsets.ViewSet):
         logout(request)
 
         if user:
-            return Response({'message': f'{user.username} logout successfully'}, status=200)
+            return Response({'message': f'{user.username} logged-out successfully'}, status=200)
         else:
             return Response({'message': 'Logout Successful'}, status=200)
 
