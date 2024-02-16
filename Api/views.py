@@ -10,7 +10,7 @@ from django.http import Http404
 from decimal import Decimal
 import random
 from .models import UserProfile, Prediction
-from .serializers import UserProfileSerializer,PredictionSerializer,BalanceUpdateSerializer
+from .serializers import UserProfileSerializer, PredictionSerializer, BalanceUpdateSerializer
 
 
 User = get_user_model()
@@ -78,25 +78,26 @@ class AuthViewSet(viewsets.ViewSet):
                     # Issue a JWT token
                     refresh = RefreshToken.for_user(user)
                     data = {
-                        'refresh': str(refresh),
-                        'access': str(refresh.access_token),
-                        'User_info':{
-                            'First_name':user.first_name,
-                            'Last_name': user.last_name,
-                            'Username': user.username,
-                            'Email': user.email
-                        }
+                        'refresh_token': str(refresh),
+                        'access_token': str(refresh.access_token),
                     }
 
-                    return Response({'message': 'Login successful', 'tokens': data}, status=status.HTTP_200_OK)
+                    user_data = {
+                        'First_name': user.first_name,
+                        'Last_name': user.last_name,
+                        'Username': user.username,
+                        'Email': user.email
+                    }
+
+                    return Response({'message': 'Login successful', 'tokens': data, "user_data": user_data}, status=status.HTTP_200_OK)
                 else:
                     return Response({'error': 'User is not active'}, status=status.HTTP_401_UNAUTHORIZED)
             else:
-                return Response({'error': 'Invalid password'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'error': 'Incorrect password'}, status=status.HTTP_401_UNAUTHORIZED)
         else:
-            return Response({'error': 'Invalid email'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'User with this email already exists'}, status=status.HTTP_401_UNAUTHORIZED)
         
-        # logout method
+    # logout method
     @action(detail=False, methods=['post'])
     def logout(self, request):
 
@@ -105,10 +106,9 @@ class AuthViewSet(viewsets.ViewSet):
         logout(request)
 
         if user:
-            return Response({'message':f'{user.username} logout successfully'}, status=200)
+            return Response({'message': f'{user.username} logout successfully'}, status=200)
         else:
-            return Response({'message':'Logout Successful'}, status=200)
-
+            return Response({'message': 'Logout Successful'}, status=200)
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
@@ -153,28 +153,32 @@ class CoinTossViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer = PredictionSerializer
 
-
     @action(detail=False, methods=['get'])
     def history(self, request):
         user = request.user
         predictions = Prediction.objects.filter(user=user)
         serializer = PredictionSerializer(predictions, many=True)
         
-        # Include the desired fields in the response
         response_data = []
         for prediction_data in serializer.data:
             win = prediction_data['result'] == prediction_data['side_predicted']
+            amount_won = float(prediction_data['stake_amount']) * 2 if win else None
+            amount_lost = float(prediction_data['stake_amount']) if not win else None
+
             response_data.append({
                 'username': user.username,
                 'side_predicted': prediction_data['side_predicted'],
                 'stake_amount': prediction_data['stake_amount'],
                 'result': prediction_data['result'],
-                'win':win,
+                'win': win,
+                'amount_won': '{:.2f}'.format(amount_won) if amount_won is not None else None,
+                'amount_lost': '{:.2f}'.format(amount_lost) if amount_lost is not None else None,
                 'predicted_at': prediction_data['predicted_at']
             })
 
         return Response(response_data, status=status.HTTP_200_OK)
-    
+
+
 
     @action(detail=False, methods=['post'])
     def predict(self, request):
@@ -216,21 +220,24 @@ class CoinTossViewSet(viewsets.ViewSet):
 
         # Process the result
         if result == side:
-            profile.balance += 2 * stake_amount
+            amount_won = 2 * stake_amount
+            profile.balance += amount_won
             profile.save()
-            message = f'Congratulations! You won  Ghs {2 * stake_amount} . New balance: Ghs {profile.balance}'
+            message = f'Congratulations! You won Ghs {amount_won}. New balance: Ghs {profile.balance}'
             win = True
         else:
-            profile.balance -= stake_amount
+            amount_lost = stake_amount
+            profile.balance -= amount_lost
             profile.save()
-            message = f'Oops! You lost Ghs {stake_amount} . New balance: Ghs {profile.balance}'
+            message = f'Oops! You lost Ghs {amount_lost}. New balance: Ghs {profile.balance}'
             win = False
 
         # Include the desired fields in the response
         prediction_data = PredictionSerializer(prediction).data
-        win = result == side
         response_data = {
             'message': message,
+            'amount_won': amount_won if win else None,
+            'amount_lost': amount_lost if not win else None,
             'result': result,
             'prediction': {
                 'username': user.username,
