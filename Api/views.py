@@ -249,7 +249,8 @@ class CoinTossViewSet(viewsets.ViewSet):
                 'stake_amount': prediction_data['stake_amount'],
                 'result': prediction_data['result'],
                 'win': win,
-                'predicted_at': prediction_data['predicted_at']
+                'predicted_at': prediction_data['predicted_at'],
+                'balance': profile.balance
             }
         }
 
