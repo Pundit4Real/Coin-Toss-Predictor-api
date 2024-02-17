@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import action
 from rest_framework import viewsets, permissions, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
@@ -83,6 +85,7 @@ class AuthViewSet(viewsets.ViewSet):
                     }
 
                     user_data = {
+                        'id': user.id,
                         'First_name': user.first_name,
                         'Last_name': user.last_name,
                         'Username': user.username,
@@ -96,19 +99,16 @@ class AuthViewSet(viewsets.ViewSet):
                 return Response({'error': 'Incorrect password'}, status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Response({'error': 'User with this email already exists'}, status=status.HTTP_401_UNAUTHORIZED)
-        
+            
     # logout method
     @action(detail=False, methods=['post'])
     def logout(self, request):
-
-        user = request.user
-
-        logout(request)
-
-        if user:
-            return Response({'message': f'{user.username} logged-out successfully'}, status=200)
+        if request.user.is_authenticated:
+            username=request.user.username
+            logout(request)
+            return Response({'message': f'{username} logged-out successfully'}, status=status.HTTP_200_OK)
         else:
-            return Response({'message': 'Logout Successful'}, status=200)
+            raise PermissionDenied(detail="You must be logged-in to perform this action.")
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
@@ -165,21 +165,27 @@ class CoinTossViewSet(viewsets.ViewSet):
             amount_won = float(prediction_data['stake_amount']) * 2 if win else None
             amount_lost = float(prediction_data['stake_amount']) if not win else None
 
-            response_data.append({
+            # Include the desired fields in the response
+            prediction_entry = {
                 'username': user.username,
                 'side_predicted': prediction_data['side_predicted'],
                 'stake_amount': prediction_data['stake_amount'],
                 'result': prediction_data['result'],
                 'win': win,
-                'amount_won': '{:.2f}'.format(amount_won) if amount_won is not None else None,
-                'amount_lost': '{:.2f}'.format(amount_lost) if amount_lost is not None else None,
                 'predicted_at': prediction_data['predicted_at']
-            })
+            }
+
+            # Conditionally include amount_won or amount_lost
+            if amount_won is not None:
+                prediction_entry['amount_won'] = '{:.2f}'.format(amount_won)
+            elif amount_lost is not None:
+                prediction_entry['amount_lost'] = '{:.2f}'.format(amount_lost)
+
+            response_data.append(prediction_entry)
 
         return Response(response_data, status=status.HTTP_200_OK)
 
-
-
+#prediction method
     @action(detail=False, methods=['post'])
     def predict(self, request):
         user = request.user
@@ -232,12 +238,10 @@ class CoinTossViewSet(viewsets.ViewSet):
             message = f'Oops! You lost Ghs {amount_lost}. New balance: Ghs {profile.balance}'
             win = False
 
-        # Include the desired fields in the response
+                # Include the desired fields in the response
         prediction_data = PredictionSerializer(prediction).data
         response_data = {
             'message': message,
-            'amount_won': amount_won if win else None,
-            'amount_lost': amount_lost if not win else None,
             'result': result,
             'prediction': {
                 'username': user.username,
@@ -248,5 +252,11 @@ class CoinTossViewSet(viewsets.ViewSet):
                 'predicted_at': prediction_data['predicted_at']
             }
         }
+
+                # Conditionally include amount_won or amount_lost
+        if win:
+            response_data['prediction']['amount_won'] = amount_won
+        else:
+            response_data['prediction']['amount_lost'] = amount_lost
 
         return Response(response_data, status=status.HTTP_200_OK)
