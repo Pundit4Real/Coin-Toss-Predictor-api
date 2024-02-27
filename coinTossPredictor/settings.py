@@ -45,9 +45,11 @@ INSTALLED_APPS = [
     #third party apps
     'corsheaders',
     'rest_framework',
+    'django_rest_passwordreset', # password reset change
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+
 ]
 
 MIDDLEWARE = [
@@ -67,7 +69,7 @@ ROOT_URLCONF = 'coinTossPredictor.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR, 'templates/',],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -150,6 +152,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+
     ],
 }
 
@@ -162,8 +166,15 @@ SIMPLE_JWT = {
 AUTH_USER_MODEL= 'Api.User'
 
 
-
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  
 ]
 
+# Email Backend Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Replace with your preferred backend
+
+EMAIL_PORT = 587  # Replace with your email port
+EMAIL_USE_TLS = True  # Set to False if your email server doesn't use TLS
+EMAIL_HOST = 'smtp.gmail.com'  # Replace with your email host for gmail -> 'smtp.gmail.com'
+EMAIL_HOST_USER = 'mohammedaalli088@gmail.com'  # Replace with your email username
+EMAIL_HOST_PASSWORD = 'scloegskuxymtnkg'  # Replace with your email password
