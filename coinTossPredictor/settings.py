@@ -53,10 +53,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -167,6 +167,6 @@ AUTH_USER_MODEL= 'Api.User'
 
 
 CORS_ALLOWED_ORIGINS = [
-    "https://predict-and-win.netlify.app" ,
+    "https://predic-and-win.netlify.app" ,
     "http://localhost:5173", 
 ]
