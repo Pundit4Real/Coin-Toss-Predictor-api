@@ -69,7 +69,7 @@ ROOT_URLCONF = 'coinTossPredictor.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR, 'templates/',],
+        'DIRS': [ ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -167,14 +167,6 @@ AUTH_USER_MODEL= 'Api.User'
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  
+    "http://localhost:5173", 
+    "https://predic-and-win.netlify.app" 
 ]
-
-# Email Backend Configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Replace with your preferred backend
-
-EMAIL_PORT = 587 
-EMAIL_USE_TLS = True  
-EMAIL_HOST = 'smtp.gmail.com'  
-EMAIL_HOST_USER = 'mohammedaalli088@gmail.com'  
-EMAIL_HOST_PASSWORD = 'scloegskuxymtnkg'  

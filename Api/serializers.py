@@ -17,3 +17,10 @@ class PredictionSerializer(serializers.ModelSerializer):
 
 class BalanceUpdateSerializer(serializers.Serializer):
     balance = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
+
+# class PasswordResetSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
+
+

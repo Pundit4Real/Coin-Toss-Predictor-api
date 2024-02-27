@@ -1,11 +1,18 @@
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import action
+from django.core.mail import send_mail
+from django.conf import settings
 from rest_framework import viewsets, permissions, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.views import APIView
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from django.http import Http404
@@ -261,3 +268,34 @@ class CoinTossViewSet(viewsets.ViewSet):
             response_data['prediction']['amount_lost'] = amount_lost
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+
+# class CustomPasswordResetView(APIView):
+#     def post(self, request):
+#         serializer = PasswordResetSerializer(data=request.data)
+#         if serializer.is_valid():
+#             email = serializer.validated_data['email']
+#             try:
+#                 user = User.objects.get(email=email)
+#             except User.DoesNotExist:
+#                 # Handle case where user with email doesn't exist
+#                 return Response({'error': 'User with this email does not exist'}, status=status.HTTP_404_NOT_FOUND)
+            
+#             # Generate password reset token
+#             token = default_token_generator.make_token(user)
+#             uid = urlsafe_base64_encode(force_bytes(user.pk))
+            
+#             # Construct password reset URL
+#             reset_url = f"{settings.BASE_URL}/password_reset/{uid}/{token}/"
+            
+#             # Send email with password reset link
+#             subject = 'Password Reset Request'
+#             message = f'Click the link below to reset your password:\n\n{reset_url}'
+#             from_email = settings.DEFAULT_FROM_EMAIL
+#             recipient_list = [email]
+#             send_mail(subject, message, from_email, recipient_list)
+
+#             return Response({'success': 'Password reset email sent successfully'}, status=status.HTTP_200_OK)
+#         else:
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
