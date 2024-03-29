@@ -268,8 +268,10 @@ class CoinTossViewSet(viewsets.ViewSet):
             response_data['prediction']['amount_lost'] = amount_lost
 
         return Response(response_data, status=status.HTTP_200_OK)
+    
+    
 
-
+#Customized Password Reset Functions
 
 # class CustomPasswordResetView(APIView):
 #     def post(self, request):
