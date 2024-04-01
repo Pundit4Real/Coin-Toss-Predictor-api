@@ -1,14 +1,18 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import UserProfileViewSet, AuthViewSet, CoinTossViewSet
-
-# Create a router and register the viewsets
-router = DefaultRouter()
-router.register(r'user-profiles', UserProfileViewSet, basename='user-profile')
-router.register(r'auth', AuthViewSet, basename='auth')
-router.register(r'coin-toss', CoinTossViewSet, basename='coin-toss')
+from django.urls import path
+from .views import RegisterAPIView, LoginAPIView, LogoutAPIView, UserProfileAPIView, CoinTossAPIView
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    # Auth URLs
+    path('api/auth/register/', RegisterAPIView.as_view(), name='register'),
+    path('api/auth/login/', LoginAPIView.as_view(), name='login'),
+    path('api/auth/logout/', LogoutAPIView.as_view(), name='logout'),
 
+    # User Profile URLs
+    path('api/user-profiles/', UserProfileAPIView.as_view(), name='user-profile-list'),
+    path('api/user-profiles/balance/', UserProfileAPIView.as_view(), name='user-profile-balance'),
+    path('api/user-profiles/<int:pk>/update_balance/', UserProfileAPIView.as_view(), name='user-profile-update-balance'),
+
+    # Coin Toss URLs
+    path('api/coin-toss/history/', CoinTossAPIView.as_view(), name='coin-toss-history'),
+    path('api/coin-toss/predict/', CoinTossAPIView.as_view(), name='coin-toss-predict'),
 ]
