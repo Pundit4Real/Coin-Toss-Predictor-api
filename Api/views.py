@@ -3,13 +3,10 @@ from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmVie
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import action
-from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework import viewsets, permissions, status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.views import APIView
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes

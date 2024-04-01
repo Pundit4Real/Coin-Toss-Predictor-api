@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import datetime
 from pathlib import Path
 from datetime import timedelta
 import os
@@ -45,8 +46,8 @@ INSTALLED_APPS = [
     #third party apps
     'corsheaders',
     'rest_framework',
-    'django_rest_passwordreset', # password reset change
     'rest_framework.authtoken',
+    'django_rest_passwordreset', # password reset change
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
@@ -166,10 +167,21 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=7),
 }
 
+# JWT authentication settings
+JWT_AUTH = {
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=100000),
+}
+
+
 AUTH_USER_MODEL= 'Api.User'
 
+CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ALLOWED_ORIGINS = [
     "https://predic-and-win.netlify.app" ,
     "http://localhost:5173", 
 ]
+
+CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+CORS_ALLOW_HEADERS = ['*']
+
