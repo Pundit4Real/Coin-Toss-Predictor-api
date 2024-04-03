@@ -28,21 +28,6 @@ class RegisterAPIView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginAPIView(APIView):
-    # swagger_schema = {
-    #     'operation_id': 'login_user',
-    #     'request_body': openapi.Schema(
-    #         type=openapi.TYPE_OBJECT,
-    #         properties={
-    #             'email': openapi.Schema(type=openapi.TYPE_STRING, description='User email'),
-    #             'password': openapi.Schema(type=openapi.TYPE_STRING, description='User password'),
-    #         },
-    #         required=['email', 'password']
-    #     ),
-    #     'responses': {
-    #         200: 'Login successful',
-    #         401: 'Unauthorized'
-    #     }
-    # }
 
     permission_classes = [permissions.AllowAny]
 
@@ -62,13 +47,6 @@ class LoginAPIView(APIView):
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 class LogoutAPIView(APIView):
-    # swagger_schema = {
-    #     'operation_id': 'logout_user',
-    #     'responses': {
-    #         200: 'Logout successful',
-    #         401: 'Unauthorized'
-    #     }
-    # }
 
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [JWTAuthentication]
@@ -81,12 +59,6 @@ class LogoutAPIView(APIView):
         return Response({'message': 'Logout successful'}, status=status.HTTP_200_OK)
 
 class UserProfileAPIView(APIView):
-    # swagger_schema = {
-    #     'operation_id': 'get_user_profile',
-    #     'responses': {
-    #         200: UserProfileSerializer
-    #     }
-    # }
 
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [JWTAuthentication]
@@ -123,12 +95,6 @@ class UserProfileAPIView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CoinTossAPIView(APIView):
-    # swagger_schema = {
-    #     'operation_id': 'get_prediction_history',
-    #     'responses': {
-    #         200: 'Prediction history retrieved successfully'
-    #     }
-    # }
 
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [JWTAuthentication]
@@ -142,21 +108,6 @@ class CoinTossAPIView(APIView):
         serializer = PredictionSerializer(predictions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    # swagger_schema_post = {
-    #     'operation_id': 'make_prediction',
-    #     'request_body': openapi.Schema(
-    #         type=openapi.TYPE_OBJECT,
-    #         properties={
-    #             'side': openapi.Schema(type=openapi.TYPE_STRING, description='Predicted side (HEAD or TAIL)'),
-    #             'stake_amount': openapi.Schema(type=openapi.TYPE_NUMBER, description='Stake amount'),
-    #         },
-    #         required=['side', 'stake_amount']
-    #     ),
-    #     'responses': {
-    #         200: 'Prediction made successfully',
-    #         400: 'Bad Request'
-    #     }
-    # }
 
     def post(self, request):
         """

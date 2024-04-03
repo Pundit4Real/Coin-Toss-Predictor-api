@@ -20,7 +20,3 @@ class BalanceUpdateSerializer(serializers.Serializer):
 
 
 
-# class PasswordResetSerializer(serializers.Serializer):
-#     email = serializers.EmailField()
-
-
