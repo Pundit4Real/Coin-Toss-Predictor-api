@@ -63,9 +63,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
         # Send verification email
         
-        send_email_verification_code(
-            validated_data['email'], 
-            email_verification_code
+        send_email_verification_code(validated_data['email'],email_verification_code
             )  # Call the utility function
 
         return user
@@ -82,7 +80,7 @@ class ResetPasswordEmailSerializer(serializers.Serializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'email', 'balance']
+        fields = ['id', 'full_name', 'email','avatar', 'balance']
 
 # class PredictionSerializer(serializers.ModelSerializer):
 #     class Meta:

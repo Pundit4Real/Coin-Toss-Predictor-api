@@ -5,6 +5,7 @@ from django.core.mail import send_mail
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth import update_session_auth_hash
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -37,21 +38,35 @@ class UserRegistrationView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+from rest_framework_simplejwt.tokens import RefreshToken
+
 class EmailVerificationAPIView(APIView):
     def get(self, request, verification_code):
         try:
             user = User.objects.get(email_verification_code=verification_code, is_active=False)
         except User.DoesNotExist:
             return Response({'message': 'Invalid verification code'}, status=status.HTTP_400_BAD_REQUEST)
+        
         user.is_active = True
         user.save()
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({'message': 'Email verified successfully',
-                         'token': token.key
-                         },
-                        status=status.HTTP_200_OK)
+        
+        # Generate tokens
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        
+        # Return response with tokens and user data
+        return Response({
+            'message': 'Email verified successfully',
+            'access_token': access_token,
+            'refresh_token': str(refresh),
+            'user_data': {
+                'full_name':user.full_name,
+                'username': user.username,
+                'email': user.email,
+                'balance': user.balance
+            }
+        }, status=status.HTTP_200_OK)
 
-# Other views remain unchanged
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
