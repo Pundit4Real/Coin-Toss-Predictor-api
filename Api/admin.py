@@ -1,12 +1,22 @@
 from django.contrib import admin
-from .models import UserProfile, Prediction,User
-
-class UserAdmin(admin.ModelAdmin):
-    list_display = ['username','email','first_name']
-
-# Register your models here.
-admin.site.register(UserProfile)
-admin.site.register(Prediction)
-admin.site.register(User, UserAdmin)
+from .models import UserProfile, Prediction, User
 
 
+class CustomUserAdmin(admin.ModelAdmin):
+    list_display = ['id','username' ,'email', 'is_active']
+    search_fields = ['email']
+
+
+class UserProfileAdmin(admin.ModelAdmin):
+    # Customizations for UserProfile admin interface can be added here
+    pass
+
+
+class PredictionAdmin(admin.ModelAdmin):
+    # Customizations for Prediction admin interface can be added here
+    pass
+
+
+admin.site.register(User, CustomUserAdmin)
+admin.site.register(UserProfile, UserProfileAdmin)
+admin.site.register(Prediction, PredictionAdmin)
