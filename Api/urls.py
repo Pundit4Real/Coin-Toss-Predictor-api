@@ -1,22 +1,19 @@
 from django.urls import path,include
-from .views import (UserRegistrationView,MyTokenObtainPairView,EmailVerificationAPIView,
-                    ChangePasswordView,ProfileAPiView)
+from .views import (UserRegistrationView,MyTokenObtainPairView,EmailVerificationView,
+                    ChangePasswordView,ProfileView, UserProfileUpdateView)
 
 urlpatterns = [
     # Auth URLs
     path('register/', UserRegistrationView.as_view(), name='register'),
     path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('verify_email/<str:verification_code>/', EmailVerificationAPIView.as_view(), name='email-verification'),
-    path('change_password/', ChangePasswordView.as_view(), name='change_password'),
-    path('password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
-    path('profile/', ProfileAPiView.as_view(), name='profile'),
-
-    # path('api/auth/logout/', LogoutAPIView.as_view(), name='logout'),
+    path('verify-email/<str:verification_code>/', EmailVerificationView.as_view(), name='email-verification'),
+    path('change-password/', ChangePasswordView.as_view(), name='change-password'),
+    path('password-reset/', include('django_rest_passwordreset.urls', namespace='password-reset')),
+    path('profile/', ProfileView.as_view(), name='profile'),
 
     # # User Profile URLs
-    # path('api/user-profiles/', UserProfileAPIView.as_view(), name='user-profile-list'),
-    # path('api/user-profiles/balance/', UserProfileAPIView.as_view(), name='user-profile-balance'),
-    # path('api/user-profiles/<int:pk>/update_balance/', UserProfileAPIView.as_view(), name='user-profile-update-balance'),
+    path('update-profile/', UserProfileUpdateView.as_view(), name='update-profile'),
+    path('update-balance/', UserProfileUpdateView.as_view(), name='update-balance'),
 
     # # Coin Toss URLs
     # path('api/coin-toss/history/', CoinTossAPIView.as_view(), name='coin-toss-history'),

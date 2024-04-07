@@ -82,6 +82,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'full_name', 'email','avatar', 'balance']
 
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['full_name','username','avatar']
+
+class BalanceUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['balance']
+
 # class PredictionSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = Prediction
