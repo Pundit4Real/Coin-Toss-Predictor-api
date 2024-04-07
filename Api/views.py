@@ -11,7 +11,6 @@ import random
 from .models import UserProfile, Prediction
 from .serializers import UserProfileSerializer, PredictionSerializer, BalanceUpdateSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from drf_yasg import openapi
 
 User = get_user_model()
 
