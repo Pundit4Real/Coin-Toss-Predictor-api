@@ -1,8 +1,10 @@
 import random
 from django.http import Http404
 from decimal import Decimal
+from django.core.mail import send_mail
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.contrib.auth import update_session_auth_hash
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,7 +15,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import User, Token
 from .models import UserProfile, Prediction
 from .serializers import (UserRegistrationSerializer,MyTokenObtainPairSerializer,
-                          UserProfileSerializer
+                          UserProfileSerializer,ChangePasswordSerializer
                            )
 # from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -24,13 +26,14 @@ class UserRegistrationView(APIView):
             serializer = UserRegistrationSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             user = serializer.save()
+
             response_data = {
                 'full_name': user.full_name,
                 'username': user.username,
                 'email': user.email,
                 'email_verification_code': user.email_verification_code
             }
-            return Response({'message': 'User registered successfully','response_data':response_data}, status=status.HTTP_201_CREATED)
+            return Response({'message': 'User registered successfully', 'response_data': response_data}, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -47,10 +50,29 @@ class EmailVerificationAPIView(APIView):
                          'token': token.key
                          },
                         status=status.HTTP_200_OK)
-    
+
+# Other views remain unchanged
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = request.user
+            if user.check_password(serializer.data.get('old_password')):
+                user.set_password(serializer.data.get('new_password'))
+                user.save()
+                update_session_auth_hash(request, user) 
+                return Response({'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
+            return Response({'error': 'Incorrect old password.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ProfileAPiView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]

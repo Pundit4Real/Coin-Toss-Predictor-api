@@ -3,7 +3,7 @@ from .models import UserProfile, Prediction, User
 
 
 class CustomUserAdmin(admin.ModelAdmin):
-    list_display = ['id','username' ,'email', 'is_active']
+    list_display = ['id','full_name' ,'email', 'is_active']
     search_fields = ['email']
 
 

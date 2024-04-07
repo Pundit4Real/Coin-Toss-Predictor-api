@@ -8,7 +8,7 @@ from .models import User
 def send_email_verification_code(email, verification_code):
     subject = 'Verify Your Email Address'
     message = f'Your email verification code is: {verification_code}'
-    from_email = 'noreply@example.com'
+    from_email = 'test123.moali@gmail.com'
     recipient_list = [email]
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list)
 

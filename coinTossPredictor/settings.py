@@ -50,7 +50,9 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_rest_passwordreset', # password reset change
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
+    'dj_rest_auth',
+    'allauth',
+    'allauth.account',
 
 ]
 
@@ -64,6 +66,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+         # Add the account middleware:
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = 'coinTossPredictor.urls'
@@ -71,7 +76,7 @@ ROOT_URLCONF = 'coinTossPredictor.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [ ],
+        'DIRS': [ os.path.join(BASE_DIR, 'templates') ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -170,6 +175,13 @@ JWT_AUTH = {
     'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=100000),
 }
 
+#Email verification setup..
+ACCOUNT_USERNAME_REQUIRED = False
+REST_USE_JWT = True  # or your preferred authentication method
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
 
 AUTH_USER_MODEL= 'Api.User'
 
@@ -184,3 +196,14 @@ CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 CORS_ALLOW_HEADERS = ['*']
 
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
+
+
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'test123.moali@gmail.com'
+EMAIL_HOST_PASSWORD = 'zquzxxqleoptctif'
+
