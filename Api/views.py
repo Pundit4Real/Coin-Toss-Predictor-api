@@ -62,8 +62,7 @@ class EmailVerificationView(APIView):
             'user_data': {
                 'full_name':user.full_name,
                 'username': user.username,
-                'email': user.email,
-                'balance': user.balance
+                'email': user.email
             }
         }, status=status.HTTP_200_OK)
 
@@ -139,10 +138,8 @@ class BalanceUpdateView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-import random
 
 class CoinTossView(APIView):
-
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
@@ -150,23 +147,13 @@ class CoinTossView(APIView):
         """
         Simulate a coin toss game.
         """
-        # Generate a random number between 0 and 1
-        result = random.random()
-
-        # Determine the outcome (head or tail) based on the random number
-        if result <= 0.45:
-            return 'TAIL'
-        else:
-            return 'HEAD'
+        return random.choice(['TAIL', 'HEAD'])
 
     def user_prediction(self, user_choice):
         """
         Simulate user's prediction.
         """
-        # Generate a random number between 0 and 1
         result = random.random()
-
-        # Determine the outcome (win or loss) based on the user's choice
         if user_choice == 'TAIL' and result <= 0.45:
             return 'WIN'
         elif user_choice == 'HEAD' and result > 0.45:
@@ -196,10 +183,21 @@ class CoinTossView(APIView):
         if stake_amount <= 0:
             return Response({'error': 'Invalid stake amount. It must be greater than zero'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user_profile = UserProfile.objects.get(user=request.user)
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
         if stake_amount > user_profile.balance:
             return Response({'error': 'Insufficient balance'}, status=status.HTTP_400_BAD_REQUEST)
+        
+# Save the UserProfile associated with the User object
+        try:
+             user_profile = UserProfile.objects.get(user=request.user)
+        except UserProfile.DoesNotExist:
+    # Handle the case where UserProfile doesn't exist
+         return Response({'error': 'User profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
 
         # Simulate the coin toss and user prediction
         coin_result = self.cointoss()
@@ -212,6 +210,7 @@ class CoinTossView(APIView):
             stake_amount=stake_amount,
             result=coin_result,
         )
+        # request.user.save()
 
         if user_result == 'WIN':
             amount_won = 2 * stake_amount

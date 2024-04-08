@@ -1,7 +1,7 @@
 from django.urls import path,include
 from .views import (UserRegistrationView,MyTokenObtainPairView,EmailVerificationView,
                     ChangePasswordView,ProfileView, UserProfileUpdateView, BalanceUpdateView,
-                    CoinTossView)
+                     CoinTossView)
 
 urlpatterns = [
     # Auth URLs

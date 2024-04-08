@@ -6,24 +6,32 @@ from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+
 from rest_framework.authtoken.models import Token
 from .utils import send_email_verification_code
 from .models import User, Prediction,UserProfile
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    token = serializers.SerializerMethodField(read_only=True)
-
     def validate(self, attrs):
         data = super().validate(attrs)
-        data['email'] = self.user.email
-        token = Token.objects.get(user=self.user)
-        token_to_str = str(token)
-        token_to_json = json.dumps(token_to_str)
-        token_to_load = json.loads(token_to_json)
-        data['token'] = token_to_load
-        data['message'] = 'Login sucessfull'
+        user = self.user
+        refresh = RefreshToken.for_user(user)
+        access = AccessToken.for_user(user)
+        data['message'] = 'Login successful'
+        data['tokens'] = {
+            'refresh_token': str(refresh),
+            'access_token': str(access),
+        }
+        data['user_data'] = {
+            'id': user.id,
+            'Full_name': user.full_name,
+            'Username': user.username,
+            'Email': user.email,
+        }
+        data.pop('refresh')
+        data.pop('access')
         return data
-
 
 
 User = get_user_model()
@@ -60,11 +68,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         email_verification_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         validated_data['email_verification_code'] = email_verification_code
         user = User.objects.create_user(**validated_data)
-
         # Send verification email
         
-        send_email_verification_code(validated_data['email'],email_verification_code
-            )  # Call the utility function
+        send_email_verification_code(validated_data['email'],email_verification_code)  # Call the utility function
 
         return user
 
@@ -86,7 +92,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['full_name', 'username', 'avatar']  
+        fields = ['full_name', 'username', 'avatar'] 
 
 class BalanceUpdateSerializer(serializers.Serializer):
     deposit = serializers.DecimalField(max_digits=10, decimal_places=2)

@@ -60,16 +60,11 @@ def update_user_profile(sender, instance, **kwargs):
     """
     Signal handler to update the UserProfile whenever the associated User is updated.
     """
-    try:
-        profile = instance.userprofile
-    except UserProfile.DoesNotExist:
-        # If UserProfile doesn't exist for the User, create one
-        profile = UserProfile.objects.create(user=instance)
-    
-    # Update UserProfile fields based on User changes
+    profile, _ = UserProfile.objects.get_or_create(user=instance)
     profile.full_name = instance.full_name
     profile.username = instance.username
     profile.save()
+
 
 # @receiver(post_save, sender=User)
 # def create_auth_token(sender, instance=None, created=False, **kwargs):

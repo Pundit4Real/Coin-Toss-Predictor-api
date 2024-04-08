@@ -31,15 +31,24 @@ class User(AbstractBaseUser, PermissionsMixin):
     def get_absolute_url(self):
         return "/users/%i/" % (self.pk)
     
-    def save(self, *args, **kwargs):
-        if not hasattr(self, 'userprofile'):
-            profile = UserProfile.objects.create(user=self)
-            profile.save()
+def save(self, *args, **kwargs):
+    if not self.pk:  # Check if the object is being created for the first time
+        created = True
+    else:
+        created = False
+
+    if created:
         # Hash the password if it's set and not hashed already
         if self.password and not self.password.startswith("pbkdf2_sha256$"):
             self.password = make_password(self.password)
-        super(User, self).save(*args, **kwargs)
-        
+
+    super(User,self).save(*args, **kwargs)
+
+    if created:
+        # Create UserProfile if it doesn't exist
+        if not hasattr(self, 'userprofile'):
+            UserProfile.objects.create(user=self)
+
     def __str__(self):
         if self.username:
             return self.username
