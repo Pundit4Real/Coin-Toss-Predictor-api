@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from .models import UserProfile
+# from django.urls import reverse
 from django.db.models.signals import post_save
 
 
@@ -19,7 +20,7 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
         'username': reset_password_token.user.username,
         'email': reset_password_token.user.email,
        
-        'reset_password_url': "https://ai-lawyer.neuracase.com/accounts/password_reset/confirm/?token={}".format(reset_password_token.key)
+        # 'reset_password_url': reverse('password_reset_confirm', kwargs={'uidb64': reset_password_token.id, 'token': reset_password_token.key})
     }
 
     # render email text
@@ -65,6 +66,12 @@ def update_user_profile(sender, instance, **kwargs):
     profile.username = instance.username
     profile.save()
 
+
+@receiver(post_save, sender=UserProfile)
+def update_user_balance(sender, instance, **kwargs):
+    if kwargs.get('created', False) or instance.balance != instance.user.balance:
+        instance.user.balance = instance.balance
+        instance.user.save()
 
 # @receiver(post_save, sender=User)
 # def create_auth_token(sender, instance=None, created=False, **kwargs):

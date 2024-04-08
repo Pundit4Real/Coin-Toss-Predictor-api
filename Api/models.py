@@ -15,6 +15,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=150, null=True, blank=True)
     password = models.CharField(max_length=200)
     email_verification_code = models.CharField(max_length=50, null=True)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
     is_staff = models.BooleanField(default=False)

@@ -1,6 +1,7 @@
 import random
 from django.http import Http404
 from decimal import Decimal
+import numpy as np
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth import update_session_auth_hash
@@ -118,70 +119,76 @@ class BalanceUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        return self.request.user
+        return self.request.user.userprofile
 
     def post(self, request, *args, **kwargs):
-        user = self.get_object()
-        try:
-            profile = user.userprofile
-        except UserProfile.DoesNotExist:
-            # Create UserProfile instance if it doesn't exist
-            profile = UserProfile.objects.create(user=user)
-
+        profile = self.get_object()
         serializer = self.serializer_class(profile, data=request.data)
         if serializer.is_valid():
-            # Update the balance by adding the new deposit to the old balance
-            new_balance = profile.balance + Decimal(request.data.get('deposit', 0))
-            profile.balance = new_balance
+            profile.balance += Decimal(request.data.get('deposit', 0))
             profile.save()
-            return Response({'username': user.username, 'balance': new_balance})
+            return Response({'username': profile.user.username, 'balance': profile.balance})
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
 
 class CoinTossView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    WIN_PROBABILITY = 0.2  # Initial win probability
+    MAX_WIN_PROBABILITY = 0.5  # Maximum win probability
+    WIN_INCREMENT = 0.05  # Increment for win probability
+    WIN_LIMIT = 0.6  # Limit after which win probability won't increase further
+
+    def get_user_win_rate(self, user):
+        """
+        Calculate the win rate of the user based on past predictions.
+        """
+        total_predictions = Prediction.objects.filter(user=user).count()
+        if total_predictions == 0:
+            return 0
+        win_predictions = Prediction.objects.filter(user=user, win=True).count()
+        return win_predictions / total_predictions
+
+    def get_win_probability(self, user):
+        """
+        Calculate the dynamic win probability based on the user's win rate.
+        """
+        user_win_rate = self.get_user_win_rate(user)
+        dynamic_win_probability = min(self.WIN_PROBABILITY + user_win_rate * self.WIN_INCREMENT, self.MAX_WIN_PROBABILITY)
+        return min(dynamic_win_probability, self.WIN_LIMIT)
+
+    def user_prediction(self, user_choice, win_probability):
+        """
+        Simulate user's prediction with dynamic win probability.
+        """
+        result = random.random()
+        if user_choice == 'TAIL' and result <= win_probability:
+            return True  # User wins
+        elif user_choice == 'HEAD' and result > (1 - win_probability):
+            return True  # User wins
+        else:
+            return False  # User loses
 
     def cointoss(self):
         """
-        Simulate a coin toss game.
+        Simulate a coin toss game with random events.
         """
-        return random.choice(['TAIL', 'HEAD'])
-
-    def user_prediction(self, user_choice):
-        """
-        Simulate user's prediction.
-        """
-        result = random.random()
-        if user_choice == 'TAIL' and result <= 0.45:
-            return 'WIN'
-        elif user_choice == 'HEAD' and result > 0.45:
-            return 'WIN'
+        # Introduce random events during the coin toss simulation
+        if np.random.random() < 0.2:  # 20% chance of a random event
+            # Random event occurs, affecting the outcome
+            return random.choice(['TAIL', 'HEAD'])
         else:
-            return 'LOSS'
-
-    def get(self, request):
-        """
-        Get user prediction history.
-        """
-        user = request.user
-        predictions = Prediction.objects.filter(user=user)
-        serializer = PredictionSerializer(predictions, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            # Regular coin toss without any random events
+            return random.choice(['TAIL', 'HEAD'])
 
     def post(self, request):
-        """
-        Make a prediction using the provided coin toss simulation.
-        """
         user_choice = request.data.get('side', '').upper()
         stake_amount = Decimal(request.data.get('stake_amount', 0.0))
 
+        # Check for valid user input...
         if user_choice not in ['HEAD', 'TAIL']:
             return Response({'error': 'Invalid side. Please choose from the options: HEAD or TAIL'}, status=status.HTTP_400_BAD_REQUEST)
 
         if stake_amount <= 0:
-            return Response({'error': 'Invalid stake amount. It must be greater than zero'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Invalid stake amount. Deposit to continue!'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user_profile = UserProfile.objects.get(user=request.user)
@@ -190,18 +197,13 @@ class CoinTossView(APIView):
 
         if stake_amount > user_profile.balance:
             return Response({'error': 'Insufficient balance'}, status=status.HTTP_400_BAD_REQUEST)
-        
-# Save the UserProfile associated with the User object
-        try:
-             user_profile = UserProfile.objects.get(user=request.user)
-        except UserProfile.DoesNotExist:
-    # Handle the case where UserProfile doesn't exist
-         return Response({'error': 'User profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Calculate dynamic win probability
+        win_probability = self.get_win_probability(request.user)
 
         # Simulate the coin toss and user prediction
         coin_result = self.cointoss()
-        user_result = self.user_prediction(user_choice)
+        user_result = self.user_prediction(user_choice, win_probability)
 
         # Create a new prediction record in the database
         prediction = Prediction.objects.create(
@@ -209,17 +211,49 @@ class CoinTossView(APIView):
             side_predicted=user_choice,
             stake_amount=stake_amount,
             result=coin_result,
+            win=user_result
         )
-        # request.user.save()
 
-        if user_result == 'WIN':
+        # Update user's balance based on prediction result
+        if user_result:
             amount_won = 2 * stake_amount
             user_profile.balance += amount_won
             user_profile.save()
             message = f'Congratulations! You won Ghs {amount_won}. New balance: Ghs {user_profile.balance}'
+            win_status = True
+
         else:
             user_profile.balance -= stake_amount
             user_profile.save()
             message = f'Oops! You lost Ghs {stake_amount}. New balance: Ghs {user_profile.balance}'
+            win_status = False
 
-        return Response({'message': message, 'coin_result': coin_result, 'user_result': user_result}, status=status.HTTP_200_OK)
+        # Construct response
+        response_data = {
+            'message': message,
+            'coin_result': coin_result,
+            'user_result': user_result,
+            'side_predicted': user_choice,
+            'win':win_status,
+            # 'win_probability': win_probability,
+            'balance': user_profile.balance
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+    
+
+    def get_user_predictions(self, user):
+        """
+        Retrieve prediction history for the user.
+        """
+        predictions = Prediction.objects.filter(user=user)
+        serializer = PredictionSerializer(predictions, many=True)
+        return serializer.data
+
+    def get(self, request):
+        """
+        Get user prediction history.
+        """
+        user = request.user
+        prediction_history = self.get_user_predictions(user)
+        return Response(prediction_history, status=status.HTTP_200_OK)
