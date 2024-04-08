@@ -161,11 +161,11 @@ class CoinTossView(APIView):
         """
         result = random.random()
         if user_choice == 'TAIL' and result <= win_probability:
-            return True  # User wins
+            return True
         elif user_choice == 'HEAD' and result > (1 - win_probability):
-            return True  # User wins
+            return True
         else:
-            return False  # User loses
+            return False  
 
     def cointoss(self):
         """
@@ -173,7 +173,7 @@ class CoinTossView(APIView):
         """
         # Introduce random events during the coin toss simulation
         if np.random.random() < 0.2:  # 20% chance of a random event
-            # Random event occurs, affecting the outcome
+           
             return random.choice(['TAIL', 'HEAD'])
         else:
             # Regular coin toss without any random events
@@ -183,7 +183,6 @@ class CoinTossView(APIView):
         user_choice = request.data.get('side', '').upper()
         stake_amount = Decimal(request.data.get('stake_amount', 0.0))
 
-        # Check for valid user input...
         if user_choice not in ['HEAD', 'TAIL']:
             return Response({'error': 'Invalid side. Please choose from the options: HEAD or TAIL'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -228,7 +227,6 @@ class CoinTossView(APIView):
             message = f'Oops! You lost Ghs {stake_amount}. New balance: Ghs {user_profile.balance}'
             win_status = False
 
-        # Construct response
         response_data = {
             'message': message,
             'coin_result': coin_result,
@@ -255,5 +253,5 @@ class CoinTossView(APIView):
         Get user prediction history.
         """
         user = request.user
-        prediction_history = self.get_user_predictions(user)
-        return Response(prediction_history, status=status.HTTP_200_OK)
+        predictions = self.get_user_predictions(user)
+        return Response(predictions, status=status.HTTP_200_OK)
