@@ -12,12 +12,15 @@ from rest_framework import permissions, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import User, Token
+from django.contrib.auth import get_user_model
+
 from .models import UserProfile, Prediction
 from .serializers import (UserRegistrationSerializer,MyTokenObtainPairSerializer,
                           UserProfileSerializer,UserProfileUpdateSerializer, 
                           ChangePasswordSerializer, BalanceUpdateSerializer)
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+User = get_user_model()
 
 class UserRegistrationView(APIView):
     def post(self, request):
@@ -95,41 +98,46 @@ class ProfileView(generics.ListAPIView):
         return queryset
 
 
-
 class UserProfileUpdateView(APIView):
-
     serializer_class = UserProfileUpdateSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        return self.request.user.userprofile
-    
-    def patch(self, request, *args, **kwargs):
+        return self.request.user
 
-        """
-        update user profile
-        """
+    def put(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.serializer_class(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        # self.perform_update(serializer)
+        serializer.save()
         return Response(serializer.data)
 
-    def post(self, request):
-        """
-        Update user balance.
-        """
-        serializer = BalanceUpdateSerializer(data=request.data)
+class BalanceUpdateView(APIView):
+    serializer_class = BalanceUpdateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+    def post(self, request, *args, **kwargs):
+        user = self.get_object()
+        try:
+            profile = user.userprofile
+        except UserProfile.DoesNotExist:
+            # Create UserProfile instance if it doesn't exist
+            profile = UserProfile.objects.create(user=user)
+
+        serializer = self.serializer_class(profile, data=request.data)
         if serializer.is_valid():
-            added_amount = serializer.validated_data['balance']
-            user_profile = self.get_object()
-            user_profile.balance += added_amount
-            user_profile.save()
-            return Response({'message': 'Balance updated successfully', 'New balance': f'Ghs {user_profile.balance}'}, status=status.HTTP_200_OK)
+            # Update the balance by adding the new deposit to the old balance
+            new_balance = profile.balance + Decimal(request.data.get('deposit', 0))
+            profile.balance = new_balance
+            profile.save()
+            return Response({'username': user.username, 'balance': new_balance})
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        
 # class CoinTossAPIView(APIView):
 
 #     permission_classes = [permissions.IsAuthenticated]

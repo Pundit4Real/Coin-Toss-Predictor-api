@@ -1,12 +1,15 @@
+from django.contrib.auth import get_user_model
+from .models import UserProfile
+from django.db.models.signals import post_save
 
 
 from django.core.mail import EmailMultiAlternatives
 from django.dispatch import receiver
 from django.template.loader import render_to_string
-from django.urls import reverse
 
 from django_rest_passwordreset.signals import reset_password_token_created
 
+User = get_user_model()
 
 @receiver(reset_password_token_created)
 def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):
@@ -25,7 +28,7 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
 
     msg = EmailMultiAlternatives(
         # title:
-        "Password Reset for {title}".format(title="LawTabby"),
+        "Password Reset for {title}".format(title="Pundit"),
         # message:
         email_plaintext_message,
         # from:
@@ -36,27 +39,37 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     msg.attach_alternative(email_html_message, "text/html")
     msg.send()
 
-
-
-
-from django.db.models.signals import post_save
-# from django.dispatch import receiver
-# from django.urls import reverse_lazy
-# from django.urls import reverse
-from django.contrib.auth import get_user_model
-# from rest_framework.authtoken.models import Token
-from .models import UserProfile
-
-User = get_user_model()
-
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
-    if created:
+    """
+    Signal handler to create a UserProfile instance when a new User is created.
+    """
+    if created and not hasattr(instance, 'userprofile'):
         UserProfile.objects.create(user=instance)
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
-    instance.userprofile.save()
+    """
+    Signal handler to save the UserProfile instance whenever the associated User is saved.
+    """
+    if hasattr(instance, 'userprofile'):
+        instance.userprofile.save()
+
+@receiver(post_save, sender=User)
+def update_user_profile(sender, instance, **kwargs):
+    """
+    Signal handler to update the UserProfile whenever the associated User is updated.
+    """
+    try:
+        profile = instance.userprofile
+    except UserProfile.DoesNotExist:
+        # If UserProfile doesn't exist for the User, create one
+        profile = UserProfile.objects.create(user=instance)
+    
+    # Update UserProfile fields based on User changes
+    profile.full_name = instance.full_name
+    profile.username = instance.username
+    profile.save()
 
 # @receiver(post_save, sender=User)
 # def create_auth_token(sender, instance=None, created=False, **kwargs):

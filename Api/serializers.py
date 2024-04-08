@@ -8,7 +8,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.authtoken.models import Token
 from .utils import send_email_verification_code
-from .models import User, Prediction
+from .models import User, Prediction,UserProfile
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     token = serializers.SerializerMethodField(read_only=True)
@@ -85,13 +85,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['full_name','username','avatar']
+        model = UserProfile
+        fields = ['full_name', 'username', 'avatar']  
 
-class BalanceUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['balance']
+class BalanceUpdateSerializer(serializers.Serializer):
+    deposit = serializers.DecimalField(max_digits=10, decimal_places=2)
 
 # class PredictionSerializer(serializers.ModelSerializer):
 #     class Meta:
