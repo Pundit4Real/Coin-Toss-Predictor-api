@@ -17,7 +17,8 @@ from django.contrib.auth import get_user_model
 from .models import UserProfile, Prediction
 from .serializers import (UserRegistrationSerializer,MyTokenObtainPairSerializer,
                           UserProfileSerializer,UserProfileUpdateSerializer, 
-                          ChangePasswordSerializer, BalanceUpdateSerializer)
+                          ChangePasswordSerializer, BalanceUpdateSerializer,
+                          PredictionSerializer)
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 User = get_user_model()
@@ -138,57 +139,88 @@ class BalanceUpdateView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-# class CoinTossAPIView(APIView):
+import random
 
-#     permission_classes = [permissions.IsAuthenticated]
-#     authentication_classes = [JWTAuthentication]
+class CoinTossView(APIView):
 
-#     def get(self, request):
-#         """
-#         Get user prediction history.
-#         """
-#         user = request.user
-#         predictions = Prediction.objects.filter(user=user)
-#         serializer = PredictionSerializer(predictions, many=True)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
+    def cointoss(self):
+        """
+        Simulate a coin toss game.
+        """
+        # Generate a random number between 0 and 1
+        result = random.random()
 
-#     def post(self, request):
-#         """
-#         Make a prediction.
-#         """
-#         result_options = ['HEAD', 'TAIL']
-#         result = random.choice(result_options)
+        # Determine the outcome (head or tail) based on the random number
+        if result <= 0.45:
+            return 'TAIL'
+        else:
+            return 'HEAD'
 
-#         side = request.data.get('side', '').upper()
-#         stake_amount = Decimal(request.data.get('stake_amount', 0.0))
+    def user_prediction(self, user_choice):
+        """
+        Simulate user's prediction.
+        """
+        # Generate a random number between 0 and 1
+        result = random.random()
 
-#         if side not in result_options:
-#             return Response({'error': 'Invalid side. Please choose from the options: HEAD or TAIL'}, status=status.HTTP_400_BAD_REQUEST)
+        # Determine the outcome (win or loss) based on the user's choice
+        if user_choice == 'TAIL' and result <= 0.45:
+            return 'WIN'
+        elif user_choice == 'HEAD' and result > 0.45:
+            return 'WIN'
+        else:
+            return 'LOSS'
 
-#         if stake_amount <= 0:
-#             return Response({'error': 'Invalid stake amount. It must be greater than zero'}, status=status.HTTP_400_BAD_REQUEST)
+    def get(self, request):
+        """
+        Get user prediction history.
+        """
+        user = request.user
+        predictions = Prediction.objects.filter(user=user)
+        serializer = PredictionSerializer(predictions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-#         user_profile = UserProfile.objects.get(user=request.user)
+    def post(self, request):
+        """
+        Make a prediction using the provided coin toss simulation.
+        """
+        user_choice = request.data.get('side', '').upper()
+        stake_amount = Decimal(request.data.get('stake_amount', 0.0))
 
-#         if stake_amount > user_profile.balance:
-#             return Response({'error': 'Insufficient balance'}, status=status.HTTP_400_BAD_REQUEST)
+        if user_choice not in ['HEAD', 'TAIL']:
+            return Response({'error': 'Invalid side. Please choose from the options: HEAD or TAIL'}, status=status.HTTP_400_BAD_REQUEST)
 
-#         prediction = Prediction.objects.create(
-#             user=request.user,
-#             side_predicted=side,
-#             stake_amount=stake_amount,
-#             result=result,
-#         )
+        if stake_amount <= 0:
+            return Response({'error': 'Invalid stake amount. It must be greater than zero'}, status=status.HTTP_400_BAD_REQUEST)
 
-#         if result == side:
-#             amount_won = 2 * stake_amount
-#             user_profile.balance += amount_won
-#             user_profile.save()
-#             message = f'Congratulations! You won Ghs {amount_won}. New balance: Ghs {user_profile.balance}'
-#         else:
-#             user_profile.balance -= stake_amount
-#             user_profile.save()
-#             message = f'Oops! You lost Ghs {stake_amount}. New balance: Ghs {user_profile.balance}'
+        user_profile = UserProfile.objects.get(user=request.user)
 
-#         return Response({'message': message}, status=status.HTTP_200_OK)
+        if stake_amount > user_profile.balance:
+            return Response({'error': 'Insufficient balance'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Simulate the coin toss and user prediction
+        coin_result = self.cointoss()
+        user_result = self.user_prediction(user_choice)
+
+        # Create a new prediction record in the database
+        prediction = Prediction.objects.create(
+            user=request.user,
+            side_predicted=user_choice,
+            stake_amount=stake_amount,
+            result=coin_result,
+        )
+
+        if user_result == 'WIN':
+            amount_won = 2 * stake_amount
+            user_profile.balance += amount_won
+            user_profile.save()
+            message = f'Congratulations! You won Ghs {amount_won}. New balance: Ghs {user_profile.balance}'
+        else:
+            user_profile.balance -= stake_amount
+            user_profile.save()
+            message = f'Oops! You lost Ghs {stake_amount}. New balance: Ghs {user_profile.balance}'
+
+        return Response({'message': message, 'coin_result': coin_result, 'user_result': user_result}, status=status.HTTP_200_OK)
