@@ -63,7 +63,8 @@ class EmailVerificationView(APIView):
             'user_data': {
                 'full_name':user.full_name,
                 'username': user.username,
-                'email': user.email
+                'email': user.email,
+                'balance':user.balance
             }
         }, status=status.HTTP_200_OK)
 

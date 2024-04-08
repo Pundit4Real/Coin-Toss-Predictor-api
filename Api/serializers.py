@@ -28,6 +28,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             'Full_name': user.full_name,
             'Username': user.username,
             'Email': user.email,
+            'Balance':user.balance
         }
         data.pop('refresh')
         data.pop('access')
