@@ -1,16 +1,16 @@
-import json
 import string
 import random
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
-from rest_framework.authtoken.models import Token
 from .utils import send_email_verification_code
 from .models import User, Prediction,UserProfile
+
+
+User = get_user_model()
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -33,9 +33,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         data.pop('refresh')
         data.pop('access')
         return data
-
-
-User = get_user_model()
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password_confirm = serializers.CharField(write_only=True)

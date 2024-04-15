@@ -1,32 +1,27 @@
-from rest_framework.permissions import AllowAny
 import random
-from random import randint
-from django.http import Http404
-from decimal import Decimal
 import numpy as np
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
+from decimal import Decimal
+from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
+from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import permissions, status
+from rest_framework import  status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
-from django.utils.crypto import get_random_string
-from django.core.exceptions import ObjectDoesNotExist
-from .models import User, Token
-from django.conf import settings
-import string
-from django.core.mail import send_mail
-from django.contrib.auth import get_user_model
 
-from .models import UserProfile, Prediction,PasswordResetCode
+from .models import (UserProfile, Prediction,PasswordResetCode,User)
 from .serializers import (UserRegistrationSerializer,MyTokenObtainPairSerializer,
                           UserProfileSerializer,UserProfileUpdateSerializer, 
                           ChangePasswordSerializer, BalanceUpdateSerializer,
-                          PredictionSerializer,ForgotPasswordEmailSerializer,PasswordResetSerializer)
+                          PredictionSerializer,ForgotPasswordEmailSerializer,PasswordResetSerializer
+                          )
 
 User = get_user_model()
 
@@ -136,7 +131,6 @@ class ForgotPasswordView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
 
@@ -183,8 +177,7 @@ class ResetPasswordView(APIView):
                 return Response({'detail': 'Invalid reset code.'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        
-        
+           
 class ProfileView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserProfileSerializer 
@@ -193,7 +186,6 @@ class ProfileView(generics.ListAPIView):
         user = self.request.user
         queryset = User.objects.filter(email=user.email)
         return queryset
-
 
 class UserProfileUpdateView(APIView):
     serializer_class = UserProfileUpdateSerializer

@@ -1,14 +1,13 @@
-from django.dispatch import receiver
 from django.db import models
-from django.contrib.auth.models import User, AbstractBaseUser, PermissionsMixin
-from rest_framework.authtoken.models import Token
 from django.db.models.signals import post_save
-from django.contrib.auth.hashers import make_password
-from django.utils import timezone
-from coinTossPredictor.basemodel import TimeStampedModel
-from .managers import UserManager
 from django.conf import settings
-# from Api.signals.password_reset_signals import mark_code_as_expired
+from django.utils import timezone
+from django.dispatch import receiver
+from django.contrib.auth.models import User, AbstractBaseUser, PermissionsMixin
+from django.contrib.auth.hashers import make_password
+from rest_framework.authtoken.models import Token
+from .managers import UserManager
+from coinTossPredictor.basemodel import TimeStampedModel
 
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=50, null=True, blank=True)
@@ -32,7 +31,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_absolute_url(self):
         return "/users/%i/" % (self.pk)
-    
+
+
 def save(self, *args, **kwargs):
     if not self.pk:  # Check if the object is being created for the first time
         created = True
@@ -63,7 +63,6 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
         Token.objects.create(user=instance)
 
-
 class PasswordResetCode(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     code = models.CharField(max_length=6)
@@ -92,7 +91,6 @@ class UserProfile(models.Model):
     def user_balance(self):
         return self.balance  
 
-    
 class Prediction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     side_predicted = models.CharField(max_length=4, choices=[('HEAD', 'HEAD'), ('TAIL', 'TAIL')])
