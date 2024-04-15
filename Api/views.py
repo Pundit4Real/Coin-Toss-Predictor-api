@@ -1,3 +1,4 @@
+from rest_framework.permissions import AllowAny
 import random
 from random import randint
 from django.http import Http404
@@ -73,10 +74,8 @@ class EmailVerificationView(APIView):
             }
         }, status=status.HTTP_200_OK)
 
-
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
-
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
@@ -103,6 +102,7 @@ class ChangePasswordView(APIView):
                 return Response({'error': 'Incorrect old password.'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
 class ForgotPasswordView(APIView):
     def generate_numeric_code(self):
         # Generate a 6-digit numeric code
@@ -136,7 +136,6 @@ class ForgotPasswordView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-from rest_framework.permissions import AllowAny
 
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
