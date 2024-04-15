@@ -82,21 +82,27 @@ class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        print("Inside post method")
         serializer = ChangePasswordSerializer(data=request.data)
 
         if serializer.is_valid():
             user = request.user
-            if user.check_password(serializer.data.get('old_password')):
-                user.set_password(serializer.data.get('new_password'))
+            old_password = serializer.data.get('old_password')
+            new_password = serializer.data.get('new_password')
+
+            # Check if the new password is the same as the old one
+            if user.check_password(new_password):
+                return Response({'error': 'New password cannot be the same as the old one.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if the old password is correct
+            if user.check_password(old_password):
+                user.set_password(new_password)
                 user.save()
-                update_session_auth_hash(request, user) 
+                update_session_auth_hash(request, user)
                 return Response({'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
-            return Response({'error': 'Incorrect old password.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
+            else:
+                return Response({'error': 'Incorrect old password.'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 class ForgotPasswordView(APIView):
     def generate_numeric_code(self):
         # Generate a 6-digit numeric code
