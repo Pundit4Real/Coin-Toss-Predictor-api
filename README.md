@@ -54,3 +54,7 @@ Before you begin, ensure you have met the following requirements:
 
 *The API will be available at http://localhost:8000/.*
 
+### Hosted Postman Documentation
+```bash
+    https://documenter.getpostman.com/view/29762619/2s9Yyweeh6
+
