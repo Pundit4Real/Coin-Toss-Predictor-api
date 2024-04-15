@@ -75,7 +75,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
         return user
 
-
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
@@ -87,13 +86,10 @@ class PasswordResetSerializer(serializers.Serializer):
     reset_code = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
 
-    
-
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'full_name', 'email','avatar', 'balance']
-
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
