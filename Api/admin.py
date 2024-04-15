@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UserProfile, Prediction, User
+from .models import UserProfile, Prediction, User, PasswordResetCode
 
 
 class CustomUserAdmin(admin.ModelAdmin):
@@ -9,6 +9,8 @@ class CustomUserAdmin(admin.ModelAdmin):
 
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ['full_name','username','balance']
+class PasswordResetCodeAdmin(admin.ModelAdmin):
+    list_display = ['user','code','created_at']
     
 class PredictionAdmin(admin.ModelAdmin):
     # Customizations for Prediction admin interface can be added here
@@ -18,3 +20,4 @@ class PredictionAdmin(admin.ModelAdmin):
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(UserProfile, UserProfileAdmin)
 admin.site.register(Prediction, PredictionAdmin)
+admin.site.register(PasswordResetCode,  PasswordResetCodeAdmin)

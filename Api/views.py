@@ -13,13 +13,15 @@ from rest_framework import permissions, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import User, Token
+from django.conf import settings
+from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
 
-from .models import UserProfile, Prediction
+from .models import UserProfile, Prediction,PasswordResetCode
 from .serializers import (UserRegistrationSerializer,MyTokenObtainPairSerializer,
                           UserProfileSerializer,UserProfileUpdateSerializer, 
-                          ChangePasswordSerializer, BalanceUpdateSerializer,
-                          PredictionSerializer)
+                          PasswordResetSerializer, BalanceUpdateSerializer,
+                          PredictionSerializer,ForgotPasswordEmailSerializer)
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 User = get_user_model()
@@ -73,11 +75,11 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 
-class ChangePasswordView(APIView):
+class PasswordResetView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = ChangePasswordSerializer(data=request.data)
+        serializer = PasswordResetSerializer(data=request.data)
 
         if serializer.is_valid():
             user = request.user
@@ -89,6 +91,41 @@ class ChangePasswordView(APIView):
             return Response({'error': 'Incorrect old password.'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ForgotPasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ForgotPasswordEmailSerializer(data=request.data)
+
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            user_model = get_user_model()
+
+            try:
+                user = user_model.objects.get(email=email)
+            except user_model.DoesNotExist:
+                return Response({'detail': 'No user with that email address.'}, status=status.HTTP_404_NOT_FOUND)
+
+            # Generate and store a 6-digit code
+            code = ''.join(random.choices('0123456789', k=6))
+            password_reset_code = PasswordResetCode.objects.create(user=user, code=code)
+
+
+            # Send the code to the user's email
+            subject = 'Password Reset Code'
+            message = f'Your password reset code is: {code}'
+            from_email = settings.EMAIL_HOST_USER
+            recipient_list = [user.email]
+
+            try:
+                send_mail(subject, message, from_email, recipient_list, auth_user=settings.EMAIL_HOST_USER, auth_password=settings.EMAIL_HOST_PASSWORD)
+                return Response({'detail': 'An email with a reset code has been sent to your email address.'}, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({'detail': 'Failed to send the reset code. Please try again later.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ProfileView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]

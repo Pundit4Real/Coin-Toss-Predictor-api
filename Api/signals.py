@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from .models import UserProfile
+from .models import UserProfile,PasswordResetCode
 # from django.urls import reverse
 from django.db.models.signals import post_save
 
@@ -14,31 +14,35 @@ User = get_user_model()
 
 @receiver(reset_password_token_created)
 def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):
-    # send an e-mail to the user
+    # Create a PasswordResetCode object for the user
+    PasswordResetCode.objects.create(user=reset_password_token.user, code=reset_password_token.key)
+
+    # Send an email to the user
     context = {
-        'current_user': reset_password_token.user,
         'username': reset_password_token.user.username,
         'email': reset_password_token.user.email,
-       
-        # 'reset_password_url': reverse('password_reset_confirm', kwargs={'uidb64': reset_password_token.id, 'token': reset_password_token.key})
+        'reset_code': reset_password_token.key,  # Use the reset token key as the reset code
     }
 
-    # render email text
+    # Render email text
     email_html_message = render_to_string('email/password_reset_email.html', context)
     email_plaintext_message = render_to_string('email/password_reset_email.txt', context)
 
     msg = EmailMultiAlternatives(
-        # title:
+        # Title
         "Password Reset for {title}".format(title="Pundit"),
-        # message:
+        # Message
         email_plaintext_message,
-        # from:
+        # From
         "noreply@yourdomain.com",
-        # to:
+        # To
         [reset_password_token.user.email]
     )
     msg.attach_alternative(email_html_message, "text/html")
     msg.send()
+
+
+
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
