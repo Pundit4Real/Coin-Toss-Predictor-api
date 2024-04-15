@@ -6,4 +6,4 @@ class ApiConfig(AppConfig):
     name = 'Api'
 
     def ready(self):
-        import Api.signals
+        from .signals import profile_signals, user_signals, password_reset_signals

@@ -130,6 +130,7 @@ class ForgotPasswordView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class ResetPasswordView(APIView):
     def post(self, request):
         serializer = PasswordResetSerializer(data=request.data)
@@ -139,18 +140,36 @@ class ResetPasswordView(APIView):
 
             try:
                 password_reset_code = PasswordResetCode.objects.get(code=reset_code)
+
+                # Check if the reset code is expired
+                if password_reset_code.is_expired:
+                    return Response({'detail': 'The reset code has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Check if the reset code is associated with the user
+                if password_reset_code.user != request.user:
+                    return Response({'detail': 'Invalid reset code.'}, status=status.HTTP_400_BAD_REQUEST)
+
+                    # Proceed with password reset
                 user = password_reset_code.user
+
+                # Check if the new password is different from the old one
+                if user.check_password(new_password):
+                    return Response({'detail': 'New password cannot be the same as the old one.'}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Set and save the new password
                 user.set_password(new_password)
                 user.save()
-                password_reset_code.delete()  # Delete the reset code after successful password reset
+
+
+                # Delete the reset code after successful password reset
+                password_reset_code.delete()
+
                 return Response({'detail': 'Password reset successfully.'}, status=status.HTTP_200_OK)
             except ObjectDoesNotExist:
-                return Response({'detail': 'Invalid or expired reset code.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'detail': 'Invalid reset code.'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
+        
 class ProfileView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserProfileSerializer 

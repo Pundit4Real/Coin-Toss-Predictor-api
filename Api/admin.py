@@ -10,7 +10,7 @@ class CustomUserAdmin(admin.ModelAdmin):
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ['full_name','username','balance']
 class PasswordResetCodeAdmin(admin.ModelAdmin):
-    list_display = ['user','code','created_at']
+    list_display = ['user','code','created_at','is_expired']
     
 class PredictionAdmin(admin.ModelAdmin):
     # Customizations for Prediction admin interface can be added here

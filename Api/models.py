@@ -8,6 +8,7 @@ from django.utils import timezone
 from coinTossPredictor.basemodel import TimeStampedModel
 from .managers import UserManager
 from django.conf import settings
+# from Api.signals.password_reset_signals import mark_code_as_expired
 
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=50, null=True, blank=True)
@@ -65,9 +66,12 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
 
 class PasswordResetCode(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    code = models.CharField(max_length=6) 
+    code = models.CharField(max_length=6)
+    is_expired = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return str(self.code)
 
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='userprofile')
