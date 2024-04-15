@@ -71,17 +71,22 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         # Send verification email
         
-        send_email_verification_code(validated_data['email'],email_verification_code)  # Call the utility function
+        send_email_verification_code(validated_data['email'],email_verification_code)  
 
         return user
 
 
-class PasswordResetSerializer(serializers.Serializer):
+class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
 
 class ForgotPasswordEmailSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
+
+class PasswordResetSerializer(serializers.Serializer):
+    reset_code = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
     
 
 class UserProfileSerializer(serializers.ModelSerializer):

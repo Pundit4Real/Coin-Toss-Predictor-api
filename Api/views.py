@@ -1,4 +1,5 @@
 import random
+from random import randint
 from django.http import Http404
 from decimal import Decimal
 import numpy as np
@@ -12,17 +13,19 @@ from rest_framework.response import Response
 from rest_framework import permissions, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
+from django.utils.crypto import get_random_string
+from django.core.exceptions import ObjectDoesNotExist
 from .models import User, Token
 from django.conf import settings
+import string
 from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
 
 from .models import UserProfile, Prediction,PasswordResetCode
 from .serializers import (UserRegistrationSerializer,MyTokenObtainPairSerializer,
                           UserProfileSerializer,UserProfileUpdateSerializer, 
-                          PasswordResetSerializer, BalanceUpdateSerializer,
-                          PredictionSerializer,ForgotPasswordEmailSerializer)
-from rest_framework_simplejwt.authentication import JWTAuthentication
+                          ChangePasswordSerializer, BalanceUpdateSerializer,
+                          PredictionSerializer,ForgotPasswordEmailSerializer,PasswordResetSerializer)
 
 User = get_user_model()
 
@@ -75,11 +78,12 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 
-class PasswordResetView(APIView):
+class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = PasswordResetSerializer(data=request.data)
+        print("Inside post method")
+        serializer = ChangePasswordSerializer(data=request.data)
 
         if serializer.is_valid():
             user = request.user
@@ -92,25 +96,25 @@ class PasswordResetView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
 class ForgotPasswordView(APIView):
-    permission_classes = [IsAuthenticated]
+    def generate_numeric_code(self):
+        # Generate a 6-digit numeric code
+        return ''.join(random.choices('0123456789', k=6))
 
     def post(self, request):
         serializer = ForgotPasswordEmailSerializer(data=request.data)
-
         if serializer.is_valid():
             email = serializer.validated_data['email']
-            user_model = get_user_model()
-
             try:
-                user = user_model.objects.get(email=email)
-            except user_model.DoesNotExist:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
                 return Response({'detail': 'No user with that email address.'}, status=status.HTTP_404_NOT_FOUND)
 
-            # Generate and store a 6-digit code
-            code = ''.join(random.choices('0123456789', k=6))
-            password_reset_code = PasswordResetCode.objects.create(user=user, code=code)
-
+            # Generate and store a unique 6-digit numeric code
+            code = self.generate_numeric_code()
+            print("Generated code:", code)  # Print the generated code for debugging purposes
+            PasswordResetCode.objects.create(user=user, code=code)
 
             # Send the code to the user's email
             subject = 'Password Reset Code'
@@ -125,6 +129,26 @@ class ForgotPasswordView(APIView):
                 return Response({'detail': 'Failed to send the reset code. Please try again later.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ResetPasswordView(APIView):
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        if serializer.is_valid():
+            reset_code = serializer.validated_data['reset_code']
+            new_password = serializer.validated_data['new_password']
+
+            try:
+                password_reset_code = PasswordResetCode.objects.get(code=reset_code)
+                user = password_reset_code.user
+                user.set_password(new_password)
+                user.save()
+                password_reset_code.delete()  # Delete the reset code after successful password reset
+                return Response({'detail': 'Password reset successfully.'}, status=status.HTTP_200_OK)
+            except ObjectDoesNotExist:
+                return Response({'detail': 'Invalid or expired reset code.'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class ProfileView(generics.ListAPIView):

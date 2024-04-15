@@ -1,15 +1,17 @@
 from django.urls import path,include
 from .views import (UserRegistrationView,MyTokenObtainPairView,EmailVerificationView,
-                    PasswordResetView,ProfileView, UserProfileUpdateView, BalanceUpdateView,
-                     CoinTossView)
+                    ChangePasswordView,ProfileView, UserProfileUpdateView, BalanceUpdateView,
+                     CoinTossView, ForgotPasswordView,ResetPasswordView)
 
 urlpatterns = [
     # Auth URLs
     path('register/', UserRegistrationView.as_view(), name='register'),
     path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('verify-email/<str:verification_code>/', EmailVerificationView.as_view(), name='email-verification'),
-    path('password-reset/', PasswordResetView.as_view(), name='password-reset'),
-    path('forgot-password/', include('django_rest_passwordreset.urls', namespace='password-reset')),
+    path('change-password/', ChangePasswordView.as_view(), name='change-password'),
+    path('forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
+    path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
+
     path('profile/', ProfileView.as_view(), name='profile'),
 
     # # User Profile URLs

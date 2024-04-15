@@ -21,7 +21,7 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     context = {
         'username': reset_password_token.user.username,
         'email': reset_password_token.user.email,
-        'reset_code': reset_password_token.key,  # Use the reset token key as the reset code
+        'reset_code': reset_password_token.key,  
     }
 
     # Render email text
