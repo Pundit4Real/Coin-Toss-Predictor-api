@@ -136,8 +136,11 @@ class ForgotPasswordView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+from rest_framework.permissions import AllowAny
 
 class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         serializer = PasswordResetSerializer(data=request.data)
         if serializer.is_valid():
@@ -151,12 +154,18 @@ class ResetPasswordView(APIView):
                 if password_reset_code.is_expired:
                     return Response({'detail': 'The reset code has expired.'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # Check if the reset code is associated with the user
-                if password_reset_code.user != request.user:
-                    return Response({'detail': 'Invalid reset code.'}, status=status.HTTP_400_BAD_REQUEST)
-
                     # Proceed with password reset
                 user = password_reset_code.user
+                
+                # Check if the reset code is associated with a user
+                user = password_reset_code.user
+                if user:
+                    # Check if the user's email matches the requester's email
+                    if user.email != request.data.get('email'):
+                        return Response({'detail': 'Invalid email for this reset code.'}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({'detail': 'Invalid reset code.'}, status=status.HTTP_400_BAD_REQUEST)
+
 
                 # Check if the new password is different from the old one
                 if user.check_password(new_password):
@@ -175,6 +184,7 @@ class ResetPasswordView(APIView):
                 return Response({'detail': 'Invalid reset code.'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
         
 class ProfileView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
