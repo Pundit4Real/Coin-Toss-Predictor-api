@@ -43,11 +43,14 @@ class UserRegistrationView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class EmailVerificationView(APIView):
-    def get(self, request, verification_code):
+    def post(self, request):
+        verification_code = request.data.get('verification_code')
+        email = request.data.get('email')
+
         try:
-            user = User.objects.get(email_verification_code=verification_code, is_active=False)
+            user = User.objects.get(email_verification_code=verification_code, email=email, is_active=False)
         except User.DoesNotExist:
-            return Response({'message': 'Invalid verification code'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Invalid verification code or email'}, status=status.HTTP_400_BAD_REQUEST)
         
         user.is_active = True
         user.save()
@@ -62,13 +65,12 @@ class EmailVerificationView(APIView):
             'access_token': access_token,
             'refresh_token': str(refresh),
             'user_data': {
-                'full_name':user.full_name,
+                'full_name': user.full_name,
                 'username': user.username,
                 'email': user.email,
-                'balance':user.balance
+                'balance': user.balance
             }
         }, status=status.HTTP_200_OK)
-
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 

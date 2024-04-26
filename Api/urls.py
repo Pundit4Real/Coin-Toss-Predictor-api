@@ -8,7 +8,7 @@ urlpatterns = [
     # Auth URLs
     path('register/', UserRegistrationView.as_view(), name='register'),
     path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('verify-email/<str:verification_code>/', EmailVerificationView.as_view(), name='email-verification'),
+    path('verify-email/', EmailVerificationView.as_view(), name='email-verification'),
     path('change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
     path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
