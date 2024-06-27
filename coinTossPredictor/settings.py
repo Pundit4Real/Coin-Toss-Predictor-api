@@ -177,7 +177,7 @@ JWT_AUTH = {
 
 #Email verification setup..
 ACCOUNT_USERNAME_REQUIRED = False
-REST_USE_JWT = True  # or your preferred authentication method
+REST_USE_JWT = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
