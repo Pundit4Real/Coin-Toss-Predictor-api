@@ -7,6 +7,8 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import generics
@@ -26,6 +28,20 @@ from .serializers import (UserRegistrationSerializer,MyTokenObtainPairSerializer
 User = get_user_model()
 
 class UserRegistrationView(APIView):
+    @swagger_auto_schema(
+        operation_description="Register your account now !",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your full name here'),
+                'username': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your username here'),
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your email here'),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your password here'),
+                'password_confirm': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your password_confirm here'),
+            },
+            required=['username','email','password','password_confirm']
+        )
+    )
     def post(self, request):
         try:
             serializer = UserRegistrationSerializer(data=request.data)
@@ -43,6 +59,19 @@ class UserRegistrationView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class EmailVerificationView(APIView):
+
+    @swagger_auto_schema(
+        operation_description="Verify your email now.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your registered email here.'),
+                'verification_code': openapi.Schema(type=openapi.TYPE_STRING, description='Enter the verification code here.'),
+            },
+            required=['email','verification_code']
+        )
+    )
+    
     def post(self, request):
         verification_code = request.data.get('verification_code')
         email = request.data.get('email')
@@ -77,6 +106,17 @@ class MyTokenObtainPairView(TokenObtainPairView):
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_description="Change your password.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'old_password': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your old password.'),
+                'new_password': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your new password.'),
+            },
+            required=['old_password','new_password']
+        )
+    )
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data)
 
@@ -104,7 +144,16 @@ class ForgotPasswordView(APIView):
     def generate_numeric_code(self):
         # Generate a 6-digit numeric code
         return ''.join(random.choices('0123456789', k=6))
-
+    @swagger_auto_schema(
+        operation_description="Enter your email to reset your password.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your email to reset your password.'),
+            },
+            required=['email']
+        )
+    )
     def post(self, request):
         serializer = ForgotPasswordEmailSerializer(data=request.data)
         if serializer.is_valid():
@@ -136,6 +185,17 @@ class ForgotPasswordView(APIView):
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
 
+    @swagger_auto_schema(
+        operation_description="Reset your password now!",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'reset_code': openapi.Schema(type=openapi.TYPE_STRING, description='Enter the reset code sent to your email here!.'),
+                'new_password': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your new password here'),
+            },
+            required=['reset_code','new_password']
+        )
+    )
     def post(self, request):
         serializer = PasswordResetSerializer(data=request.data)
         if serializer.is_valid():
@@ -195,7 +255,18 @@ class UserProfileUpdateView(APIView):
 
     def get_object(self):
         return self.request.user
-
+    @swagger_auto_schema(
+        operation_description="Update the user profile now!",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your full name'),
+                'username': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your username'),
+                'avatar': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_BINARY, description='choose your profile avatar')
+            },
+            required=['username']
+        )
+    )
     def put(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
@@ -210,7 +281,16 @@ class BalanceUpdateView(APIView):
 
     def get_object(self):
         return self.request.user.userprofile
-
+    @swagger_auto_schema(
+        operation_description="Deposit to your balance now!",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'deposit': openapi.Schema(type=openapi.TYPE_STRING, description='Enter the amount to be doposited.'),
+            },
+            required=['deposit']
+        )
+    )
     def post(self, request, *args, **kwargs):
         profile = self.get_object()
         serializer = self.serializer_class(profile, data=request.data)

@@ -46,9 +46,10 @@ INSTALLED_APPS = [
 
     #third party apps
     'corsheaders',
+    'drf_yasg',
     'rest_framework',
     'rest_framework.authtoken',
-    'django_rest_passwordreset', # password reset change
+    'django_rest_passwordreset',
     'rest_framework_simplejwt',
     'dj_rest_auth',
     'allauth',
