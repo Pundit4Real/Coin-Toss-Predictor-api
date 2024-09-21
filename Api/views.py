@@ -100,6 +100,7 @@ class EmailVerificationView(APIView):
                 'balance': user.balance
             }
         }, status=status.HTTP_200_OK)
+    
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
