@@ -2,6 +2,7 @@ import random
 import numpy as np
 from decimal import Decimal
 from django.conf import settings
+from django.db import transaction
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -29,7 +30,7 @@ User = get_user_model()
 
 class UserRegistrationView(APIView):
     @swagger_auto_schema(
-        operation_description="Register your account now !",
+        operation_description="Register your account now!",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
@@ -39,25 +40,26 @@ class UserRegistrationView(APIView):
                 'password': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your password here'),
                 'password_confirm': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your password_confirm here'),
             },
-            required=['username','email','password','password_confirm']
+            required=['username', 'email', 'password', 'password_confirm']
         )
     )
     def post(self, request):
         try:
-            serializer = UserRegistrationSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            user = serializer.save()
+            with transaction.atomic():
+                serializer = UserRegistrationSerializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                user = serializer.save()
 
-            response_data = {
-                'full_name': user.full_name,
-                'username': user.username,
-                'email': user.email,
-                'email_verification_code': user.email_verification_code
-            }
-            return Response({'message': 'User registered successfully', 'response_data': response_data}, status=status.HTTP_201_CREATED)
+                response_data = {
+                    'full_name': user.full_name,
+                    'username': user.username,
+                    'email': user.email,
+                    'email_verification_code': user.email_verification_code
+                }
+                return Response({'message': 'User registered successfully', 'response_data': response_data}, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
+        
 class EmailVerificationView(APIView):
 
     @swagger_auto_schema(
@@ -191,10 +193,11 @@ class ResetPasswordView(APIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your register email here'),
                 'reset_code': openapi.Schema(type=openapi.TYPE_STRING, description='Enter the reset code sent to your email here!.'),
                 'new_password': openapi.Schema(type=openapi.TYPE_STRING, description='Enter your new password here'),
             },
-            required=['reset_code','new_password']
+            required=['reset_code','new_password','email']
         )
     )
     def post(self, request):
@@ -282,6 +285,7 @@ class BalanceUpdateView(APIView):
 
     def get_object(self):
         return self.request.user.userprofile
+    
     @swagger_auto_schema(
         operation_description="Deposit to your balance now!",
         request_body=openapi.Schema(
@@ -344,12 +348,39 @@ class CoinTossView(APIView):
         """
         # Introduce random events during the coin toss simulation
         if np.random.random() < 0.2:  # 20% chance of a random event
-           
             return random.choice(['TAIL', 'HEAD'])
         else:
             # Regular coin toss without any random events
             return random.choice(['TAIL', 'HEAD'])
 
+    @swagger_auto_schema(
+        operation_description="Simulate a coin toss and make a prediction. Choose 'HEAD' or 'TAIL' and stake an amount.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'side': openapi.Schema(type=openapi.TYPE_STRING, description='Choose HEAD or TAIL'),
+                'stake_amount': openapi.Schema(type=openapi.TYPE_NUMBER, format='decimal', description='Enter the stake amount'),
+            },
+            required=['side', 'stake_amount']
+        ),
+        responses={
+            200: openapi.Response(
+                description="Coin toss result and updated balance",
+                examples={
+                    "application/json": {
+                        "message": "Congratulations! You won Ghs 20.00. New balance: Ghs 100.00",
+                        "coin_result": "HEAD",
+                        "user_result": True,
+                        "side_predicted": "HEAD",
+                        "win": True,
+                        "balance": 100.00
+                    }
+                }
+            ),
+            400: openapi.Response(description="Invalid request (e.g. insufficient balance, invalid side)"),
+            404: openapi.Response(description="User profile not found")
+        }
+    )
     def post(self, request):
         user_choice = request.data.get('side', '').upper()
         stake_amount = Decimal(request.data.get('stake_amount', 0.0))
@@ -391,7 +422,6 @@ class CoinTossView(APIView):
             user_profile.save()
             message = f'Congratulations! You won Ghs {amount_won}. New balance: Ghs {user_profile.balance}'
             win_status = True
-
         else:
             user_profile.balance -= stake_amount
             user_profile.save()
@@ -403,22 +433,16 @@ class CoinTossView(APIView):
             'coin_result': coin_result,
             'user_result': user_result,
             'side_predicted': user_choice,
-            'win':win_status,
-            # 'win_probability': win_probability,
+            'win': win_status,
             'balance': user_profile.balance
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
-    
 
-    def get_user_predictions(self, user):
-        """
-        Retrieve prediction history for the user.
-        """
-        predictions = Prediction.objects.filter(user=user)
-        serializer = PredictionSerializer(predictions, many=True)
-        return serializer.data
-
+    @swagger_auto_schema(
+        operation_description="Get the user's prediction history.",
+        responses={200: PredictionSerializer(many=True)}
+    )
     def get(self, request):
         """
         Get user prediction history.
