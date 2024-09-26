@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-bt+x%n(nnfkf%&^+0uygdej^y@=&_)kqp_*yp8pi@juwl4=s8+
 DEBUG = True
 
 
-ALLOWED_HOSTS = ['127.0.0.1','localhost','CoinTossApi.pythonanywhere.com']
+ALLOWED_HOSTS = ['127.0.0.1','localhost','cointossproject.pythonanywhere.com']
 
 # Application definition
 
